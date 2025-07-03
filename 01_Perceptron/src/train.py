@@ -23,7 +23,7 @@ from src import config
 from src.data_loader import load_perceptron_data, load_mnist_data
 from src.model import Perceptron
 # Import the visualization function
-from src.visualize import plot_decision_boundary, plot_perceptron_weights
+from src.visualize import plot_decision_boundary, plot_perceptron_weights, plot_learning_curve
 
 
 # --- Logging Setup ---
@@ -81,7 +81,13 @@ def train(experiment):
     accuracy = (predictions == y_binary).mean()
     logging.info(f"Final training accuracy: {accuracy:.4f}")
 
-   # --- 4. Visualize ---
+    # --- 4. Visualize ---
+    # Generate a learning curve for both experiments
+    logging.info("Generating learning curve plot...")
+    learning_curve_filename = f"learning_curve_{experiment}.png"
+    plot_learning_curve(perceptron.errors_per_epoch, filename=learning_curve_filename)
+
+    # Generate experiment-specific visualizations
     if experiment == 'logic_gate':
         logging.info("Generating decision boundary plot...")
         plot_filename = f"decision_boundary_{config.INPUT_DATA_PATH.split('/')[-1].split('.')[0]}.png"
@@ -90,7 +96,7 @@ def train(experiment):
         logging.info("Generating model weights visualization...")
         plot_perceptron_weights(perceptron)
 
-    logging.info(f"--- Experiment '{experiment}' Finished ---")
+        logging.info(f"--- Experiment '{experiment}' Finished ---")
 
 
 if __name__ == "__main__":
