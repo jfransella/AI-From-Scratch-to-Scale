@@ -209,5 +209,5 @@ __marimo__/
 
 # other project folders to ignore
 outputs/
-visualizations/
-data/
+# Ignore the downloaded MNIST dataset, but keep our small CSV files.
+data/mnist/
