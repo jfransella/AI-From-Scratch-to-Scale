@@ -11,8 +11,12 @@ parameters without changing the core logic of the application.
 # --- Configuration for Logic Gate Experiments (AND, XOR) ---
 LOGIC_GATE_LEARNING_RATE = 0.1
 LOGIC_GATE_EPOCHS = 50
-# Path can be "data/perceptron_data.csv" or "data/xor_data.csv"
-INPUT_DATA_PATH = "data/perceptron_data.csv"
+
+# A dictionary to hold paths to different logic gate datasets
+LOGIC_GATE_DATA_PATHS = {
+    "and": "data/perceptron_data.csv",
+    "xor": "data/xor_data.csv",
+}
 
 
 # --- Configuration for MNIST Experiment ---
