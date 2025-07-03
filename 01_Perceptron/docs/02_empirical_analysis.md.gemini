@@ -1,0 +1,35 @@
+# AI From Scratch to Scale: Model 01 - The Perceptron
+
+This section outlines a detailed and well-reasoned plan for testing the model.
+
+### **2.1. Backward Link**
+
+This document details the practical implementation and performance analysis of the model. For the full historical context and theoretical background, please refer to our **[Theoretical Deep Dive](./01_deep_dive.md)**.
+
+### **2.2. Proposed "Success Case" Experiment**
+
+To demonstrate the strength of the Perceptron, we will use a classic, simple task it was designed to solve: classifying **linearly separable data**.
+
+* **Dataset:** We will use NumPy to programmatically generate a 2D dataset representing the **logical AND gate**. The data points will be (0,0), (0,1), (1,0), and (1,1). The labels will be 0, 0, 0, and 1, respectively. This dataset is appropriate because a single straight line can be drawn to separate the points where the output is 1 from the points where the output is 0.
+
+* **Expected Outcome:** We expect the Perceptron algorithm to converge quickly (within a few epochs). The final model should achieve 100% accuracy on the training data.
+
+* **Metrics and Visualizations:**
+    * **Metric:** Classification accuracy.
+    * **Visualization:** A 2D scatter plot of the data points, colored by their class. We will also plot the **decision boundary** learned by the Perceptron, which should be a straight line clearly separating the (1,1) point from the other three points. This visualization will provide definitive proof of its success.
+
+### **2.3. Proposed "Failure Case" Experiment**
+
+To expose the primary limitation of the Perceptron, we will use the canonical problem that a single-layer Perceptron cannot solve: the **XOR problem**.
+
+* **Dataset:** We will use the **logical XOR gate** dataset. The data points will be the same—(0,0), (0,1), (1,0), (1,1)—but the labels will be 0, 1, 1, and 0. This dataset poses a challenge because it is **not linearly separable**. There is no single straight line that can separate the points with a label of 1 from the points with a label of 0.
+
+* **Expected Outcome:** We expect the Perceptron algorithm to **fail to converge**. The model's weights will continuously update in a cyclical pattern without ever finding a stable solution. The accuracy will likely hover around 50% or 75%, never reaching 100%.
+
+* **Metrics and Visualizations:**
+    * **Metrics:** Classification accuracy and the number of epochs. We will show that even with a high number of epochs, the accuracy does not improve beyond a certain point.
+    * **Visualization:** A 2D scatter plot of the XOR data points. We will plot the Perceptron's decision boundary over several epochs. This will visually demonstrate the model's failure, showing the line "thrashing" back and forth, unable to settle on a solution that correctly classifies all four points.
+
+### **2.4. The Transition Narrative**
+
+The weakness exposed in the failure case is *exactly* the problem that the **ADELINE** was designed to solve. It addresses this by introducing a key modification to the learning process. Unlike the Perceptron, which uses a step function to produce a hard 0/1 prediction *before* updating the weights, ADELINE (Adaptive Linear Neuron) uses the raw, un-activated weighted sum ($z$) to calculate the error. This means its error signal is continuous, not binary. By using a differentiable linear activation function and the **Delta Rule** (also known as the LMS algorithm), ADELINE can perform **gradient descent** to minimize the error, even for data that isn't perfectly separable. This shift from a simple error-correcting rule to an error-minimizing optimization was a crucial step towards more powerful models and laid the groundwork for the backpropagation algorithm used in modern deep neural networks.
