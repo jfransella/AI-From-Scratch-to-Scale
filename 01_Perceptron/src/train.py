@@ -15,14 +15,15 @@ Example usage:
 
 import logging
 import os
-import argparse  # New import for command-line arguments
+import argparse
+import numpy as np  
 
 from src import config
 # Import both data loaders
 from src.data_loader import load_perceptron_data, load_mnist_data
 from src.model import Perceptron
 # Import the visualization function
-from src.visualize import plot_decision_boundary
+from src.visualize import plot_decision_boundary, plot_perceptron_weights
 
 
 # --- Logging Setup ---
@@ -80,12 +81,14 @@ def train(experiment):
     accuracy = (predictions == y_binary).mean()
     logging.info(f"Final training accuracy: {accuracy:.4f}")
 
-    if visualize:
+   # --- 4. Visualize ---
+    if experiment == 'logic_gate':
         logging.info("Generating decision boundary plot...")
-        # Note: You may want to use a different filename for each logic gate
-        plot_decision_boundary(X, y, perceptron, filename=f"decision_boundary_{config.INPUT_DATA_PATH.split('/')[-1].split('.')[0]}.png")
-    else:
-        logging.info("Visualization is not applicable for this high-dimensional dataset.")
+        plot_filename = f"decision_boundary_{config.INPUT_DATA_PATH.split('/')[-1].split('.')[0]}.png"
+        plot_decision_boundary(X, y, perceptron, filename=plot_filename)
+    elif experiment == 'mnist':
+        logging.info("Generating model weights visualization...")
+        plot_perceptron_weights(perceptron)
 
     logging.info(f"--- Experiment '{experiment}' Finished ---")
 
