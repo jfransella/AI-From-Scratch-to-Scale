@@ -68,7 +68,7 @@ def train(experiment):
 
     # --- 2. Initialize and train the model ---
     logging.info(f"Initializing Perceptron with LR={lr} and Epochs={epochs}.")
-    perceptron = Perceptron(learning_rate=lr, n_iters=epochs)
+    perceptron = Perceptron(learning_rate=lr, n_iters=epochs, logger=logging)
 
     logging.info("Training started...")
     perceptron.fit(X, y)
