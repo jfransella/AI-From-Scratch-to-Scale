@@ -89,5 +89,36 @@ def plot_perceptron_weights(model, filename="perceptron_weights.png"):
     save_path = os.path.join(output_dir, filename)
     plt.savefig(save_path)
     plt.close(fig)
-
+    
     logging.info(f"Model weights visualization saved to {save_path}")
+    
+def plot_learning_curve(errors_per_epoch, filename="learning_curve.png"):
+    """Plots the number of misclassifications per epoch.
+
+    Args:
+        errors_per_epoch (list[int]): A list containing the count of
+                                      misclassifications for each epoch.
+        filename (str): The name of the file to save the plot.
+    """
+    fig, ax = plt.subplots()
+    
+    epochs = range(1, len(errors_per_epoch) + 1)
+    ax.plot(epochs, errors_per_epoch, marker='o', linestyle='-',
+            label='Misclassifications')
+
+    ax.set_title("Perceptron Learning Curve")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Number of Misclassifications")
+    ax.legend()
+    ax.grid(True)
+
+    # Save the plot
+    output_dir = "outputs/visualizations"
+    os.makedirs(output_dir, exist_ok=True)
+    save_path = os.path.join(output_dir, filename)
+    plt.savefig(save_path)
+    plt.close(fig)
+
+    logging.info(f"Learning curve plot saved to {save_path}")
+
+   
