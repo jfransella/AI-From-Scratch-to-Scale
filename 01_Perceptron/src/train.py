@@ -1,76 +1,104 @@
 # -*- coding: utf-8 -*-
 """Main training script for the Perceptron model.
 
-This script orchestrates the training process by:
-1. Loading configuration settings from the config module.
-2. Setting up standardized logging for console and file output.
-3. Loading the dataset using the data_loader module.
-4. Instantiating and training the Perceptron model.
-5. Evaluating the trained model's accuracy on the training data.
+This script orchestrates the training process for different experiments.
+It uses command-line arguments to select the experiment to run.
 
+Supported experiments:
+- 'logic_gate': Trains the Perceptron on a simple, 2D logic gate dataset.
+- 'mnist': Trains the Perceptron on a filtered MNIST dataset (digits 0 and 1).
+
+Example usage:
+    python src/train.py --experiment logic_gate
+    python src/train.py --experiment mnist
 """
 
 import logging
 import os
+import argparse  # New import for command-line arguments
 
 from src import config
-from src.data_loader import load_perceptron_data
+# Import both data loaders
+from src.data_loader import load_perceptron_data, load_mnist_data
 from src.model import Perceptron
+# Import the visualization function
 from src.visualize import plot_decision_boundary
 
+
 # --- Logging Setup ---
-# Create the outputs directory if it doesn't exist
+# This setup is unchanged
 os.makedirs("outputs/logs", exist_ok=True)
-
-# Configure console logger
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(console_formatter)
-
-# Configure file logger
-file_handler = logging.FileHandler('outputs/logs/training.log')
-file_handler.setLevel(logging.DEBUG)
-file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(file_formatter)
-
-# Create a logger instance
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('outputs/logs/training.log'),
+        logging.StreamHandler()
+    ]
+)
 
 
-def train():
-    """Main function to run the Perceptron training process."""
-    logger.info("--- Starting Perceptron Training ---")
+def train(experiment):
+    """Main function to run a selected training experiment."""
+    logging.info(f"--- Starting Perceptron Training: '{experiment}' experiment ---")
 
-    # 1. Load data
-    logger.info(f"Loading data from: {config.INPUT_DATA_PATH}")
-    try:
-        X, y = load_perceptron_data(config.INPUT_DATA_PATH)
-        logger.info(f"Data loaded successfully. Found {X.shape[0]} samples with {X.shape[1]} features.")
-    except FileNotFoundError:
-        logger.error(f"Error: Data file not found at {config.INPUT_DATA_PATH}. Please ensure the data exists.")
+    # --- 1. Load Data & Set Parameters based on experiment ---
+    if experiment == 'logic_gate':
+        logging.info(f"Loading data from: {config.INPUT_DATA_PATH}")
+        try:
+            X, y = load_perceptron_data(config.INPUT_DATA_PATH)
+            lr = config.LOGIC_GATE_LEARNING_RATE
+            epochs = config.LOGIC_GATE_EPOCHS
+            visualize = True
+        except FileNotFoundError:
+            logging.error(f"Error: Data file not found at {config.INPUT_DATA_PATH}.")
+            return
+    elif experiment == 'mnist':
+        logging.info("Loading MNIST data for digits 0 and 1...")
+        X, y = load_mnist_data()
+        lr = config.MNIST_LEARNING_RATE
+        epochs = config.MNIST_EPOCHS
+        visualize = False  # 2D visualization is not applicable for 784-D data
+    else:
+        logging.error(f"Unknown experiment: {experiment}")
         return
 
-    # 2. Initialize and train the model
-    logger.info(f"Initializing Perceptron with LR={config.LEARNING_RATE} and Epochs={config.EPOCHS}.")
-    perceptron = Perceptron(learning_rate=config.LEARNING_RATE, n_iters=config.EPOCHS)
+    logging.info(f"Data loaded successfully. Found {X.shape[0]} samples with {X.shape[1]} features.")
 
-    logger.info("Training started...")
+    # --- 2. Initialize and train the model ---
+    logging.info(f"Initializing Perceptron with LR={lr} and Epochs={epochs}.")
+    perceptron = Perceptron(learning_rate=lr, n_iters=epochs)
+
+    logging.info("Training started...")
     perceptron.fit(X, y)
-    logger.info("Training complete.")
+    logging.info("Training complete.")
 
-    # 3. Evaluate on training data to check for convergence
+    # --- 3. Evaluate and Visualize ---
     predictions = perceptron.predict(X)
-    accuracy = (predictions == y).mean()
-    logger.info(f"Final training accuracy: {accuracy:.2f}")
+    # Ensure y is binary for accuracy calculation
+    y_binary = np.array([1 if i > 0 else 0 for i in y])
+    accuracy = (predictions == y_binary).mean()
+    logging.info(f"Final training accuracy: {accuracy:.4f}")
 
-    # 4. Generate and save the decision boundary plot
-    logger.info("Generating decision boundary plot...")
-    plot_decision_boundary(X, y, perceptron)
+    if visualize:
+        logging.info("Generating decision boundary plot...")
+        # Note: You may want to use a different filename for each logic gate
+        plot_decision_boundary(X, y, perceptron, filename=f"decision_boundary_{config.INPUT_DATA_PATH.split('/')[-1].split('.')[0]}.png")
+    else:
+        logging.info("Visualization is not applicable for this high-dimensional dataset.")
+
+    logging.info(f"--- Experiment '{experiment}' Finished ---")
+
 
 if __name__ == "__main__":
-    train()
-    
+    # Setup command-line argument parsing
+    parser = argparse.ArgumentParser(description="Run a Perceptron training experiment.")
+    parser.add_argument(
+        '--experiment',
+        type=str,
+        default='logic_gate',
+        choices=['logic_gate', 'mnist'],
+        help="The experiment to run ('logic_gate' or 'mnist')."
+    )
+    args = parser.parse_args()
+    train(args.experiment)
