@@ -16,6 +16,7 @@ import os
 from src import config
 from src.data_loader import load_perceptron_data
 from src.model import Perceptron
+from src.visualize import plot_decision_boundary
 
 # --- Logging Setup ---
 # Create the outputs directory if it doesn't exist
@@ -66,6 +67,10 @@ def train():
     accuracy = (predictions == y).mean()
     logger.info(f"Final training accuracy: {accuracy:.2f}")
 
+    # 4. Generate and save the decision boundary plot
+    logger.info("Generating decision boundary plot...")
+    plot_decision_boundary(X, y, perceptron)
 
 if __name__ == "__main__":
     train()
+    
