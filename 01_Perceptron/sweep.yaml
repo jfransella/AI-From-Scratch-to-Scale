@@ -1,0 +1,21 @@
+program: src.train
+method: bayes
+metric:
+  name: final_accuracy
+  goal: maximize
+parameters:
+  experiment:
+    value: mnist
+  epochs:
+    distribution: int_uniform
+    min: 5
+    max: 20
+  learning_rate:
+    distribution: log_uniform_values
+    min: 0.0001
+    max: 0.1
+command:
+  - py
+  - -m
+  - ${program}
+  - ${args}

@@ -1,0 +1,37 @@
+# --- Python ---
+# Byte-compiled / optimized / C extensions
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- Virtual Environment ---
+# It's a best practice to not commit your virtual environment
+.venv/
+
+# --- IDE / Editor ---
+# VS Code specific
+.vscode/
+# JetBrains specific
+.idea/
+
+# --- Weights & Biases ---
+# W&B local run files, logs, and artifacts
+wandb/
+
+# --- Project-Specific ---
+# Data downloaded by scripts (e.g., MNIST)
+/data/
+# Generated outputs like logs and plots
+/outputs/
+
+# --- Build / Distribution ---
+build/
+dist/
+*.egg-info/
+
+# --- OS-specific ---
+# macOS
+.DS_Store
+# Windows
+Thumbs.db

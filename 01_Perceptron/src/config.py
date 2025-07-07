@@ -8,19 +8,54 @@ parameters without changing the core logic of the application.
 
 """
 
-# --- Configuration for Logic Gate Experiments (AND, XOR) ---
-LOGIC_GATE_LEARNING_RATE = 0.1
-LOGIC_GATE_EPOCHS = 50
+from src.data_loader import load_perceptron_data, load_mnist_data, load_iris_data
 
-# A dictionary to hold paths to different logic gate datasets
-LOGIC_GATE_DATA_PATHS = {
-    "and": "data/perceptron_data.csv",
-    "xor": "data/xor_data.csv",
+# --- W&B Config ---
+WANDB_PROJECT_NAME = "perceptron-from-scratch"
+
+# --- Experiment Registry ---
+# Central place to define all parameters for each experiment.
+# This makes adding new experiments much cleaner.
+
+EXPERIMENTS = {
+    "and": {
+        # The AND gate is a very simple, linearly separable problem.
+        # A high learning rate and few epochs are sufficient for convergence.
+        "data_loader": lambda: load_perceptron_data("data/perceptron_data.csv"),
+        "learning_rate": 0.1,
+        "epochs": 10,
+        "class_names": ['False', 'True'],
+    },
+    "xor": {
+        # The XOR gate is the classic example of a non-linearly separable problem.
+        # The Perceptron will fail to converge. More epochs are set to demonstrate this.
+        "data_loader": lambda: load_perceptron_data("data/xor_data.csv"),
+        "learning_rate": 0.1,
+        "epochs": 100,
+        "class_names": ['False', 'True'],
+    },
+    "mnist": {
+        # Classifying digits is a more complex task with higher dimensionality (784 features).
+        # A smaller learning rate is a safer starting point for stable learning.
+        "data_loader": load_mnist_data,
+        "learning_rate": 0.01,
+        "epochs": 10,
+        "class_names": ['Digit 0', 'Digit 1'],
+    },
+    "iris-easy": {
+        # Setosa vs. Versicolour is a linearly separable subset of the Iris dataset.
+        # The Perceptron should converge easily.
+        "data_loader": lambda: load_iris_data(class_indices=[0, 1]),
+        "learning_rate": 0.01,
+        "epochs": 100,
+        "class_names": ['Setosa', 'Versicolour'],
+    },
+    "iris-hard": {
+        # Versicolour vs. Virginica is a non-linearly separable subset.
+        # The Perceptron will struggle to find a perfect boundary, similar to XOR.
+        "data_loader": lambda: load_iris_data(class_indices=[1, 2]),
+        "learning_rate": 0.01,
+        "epochs": 100,
+        "class_names": ['Versicolour', 'Virginica'],
+    },
 }
-
-
-# --- Configuration for MNIST Experiment ---
-# MNIST is a more complex dataset and may require different settings.
-# A single epoch over MNIST is much longer, so we start with fewer epochs.
-MNIST_LEARNING_RATE = 0.01
-MNIST_EPOCHS = 10
