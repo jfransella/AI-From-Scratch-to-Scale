@@ -1,0 +1,15 @@
+{
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "args": [
+                "-ExecutionPolicy", 
+                "RemoteSigned",
+                "-NoExit",
+                "-Command",
+                "if (Test-Path '.\\.venv\\Scripts\\Activate.ps1') { Write-Host 'Found virtual environment, activating...' -ForegroundColor Green; .\\.venv\\Scripts\\Activate.ps1 } else { Write-Host 'No virtual environment found in current directory' -ForegroundColor Yellow }"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+}
