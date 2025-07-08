@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environments
+.venv/
+venv/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Generated outputs from training runs
+# This includes saved models and logs.
+outputs/
+
+# Downloaded datasets
+data/
+
+# IDE configuration
+.vscode/
+.idea/
+
+# Machine Learning specific
+# -------------------------
+# Ignore Weights & Biases local run data and artifacts
+wandb/
