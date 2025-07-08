@@ -1,62 +1,127 @@
 # -*- coding: utf-8 -*-
-"""Main training script for the Perceptron model.
+"""Main training and evaluation script for the Perceptron model.
 
-This script orchestrates the training process for different experiments.
-It uses command-line arguments to select the experiment to run.
+This script serves as the main entry point for running experiments. It handles:
+- Data loading based on the selected experiment from `config.py`.
+- Model initialization and training.
+- Integration with Weights & Biases (wandb) for logging metrics, parameters,
+  and visualizations.
+- Support for hyperparameter sweeps using wandb agents.
 
 Example usage:
-    python src/train.py --experiment and
-    python src/train.py --experiment xor
-    python src/train.py --experiment mnist
+    # Run a single experiment
+    python -m src.train --experiment and
+
+    # Run a sweep (requires a sweep.yaml file and pre-initialization)
+    wandb agent <sweep_id>
 """
 
-import logging
 import os
+import sys
 import argparse
+import logging
+from datetime import datetime
 import numpy as np
+import wandb
 
-from src import config
-from src.data_loader import load_perceptron_data, load_mnist_data
+# --- Environment Verification ---
+def _verify_virtual_environment():
+    """
+    Verifies that the script is running in the project's virtual environment.
+
+    If the interpreter path does not match the expected path within the `.venv`
+    directory, it prints an error and exits the script with a non-zero status code.
+    """
+    # Determine the expected path of the Python executable in the virtual env
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    if sys.platform == "win32":
+        expected_path = os.path.join(project_root, '.venv', 'Scripts', 'python.exe')
+    else:
+        expected_path = os.path.join(project_root, '.venv', 'bin', 'python')
+
+    # Normalize for case-insensitive comparison
+    expected_executable = os.path.normcase(expected_path)
+    current_executable = os.path.normcase(sys.executable)
+
+    if current_executable != expected_executable:
+        print(
+            f"Error: Script is not running in the correct virtual environment.\n"
+            f"  Current Interpreter: {sys.executable}\n"
+            f"  Expected Interpreter: {expected_path}",
+            file=sys.stderr,
+        )
+        activation_cmd = ".\\.venv\\Scripts\\activate" if sys.platform == "win32" else "source .venv/bin/activate"
+        print(f"\nPlease activate the virtual environment: `{activation_cmd}`", file=sys.stderr)
+        sys.exit(1)
+
+_verify_virtual_environment()
+
+from src.config import WANDB_PROJECT_NAME, EXPERIMENTS
 from src.model import Perceptron
-from src.visualize import plot_decision_boundary, plot_perceptron_weights, plot_learning_curve
+from src.visualize import Visualizer
 
 # --- Logging Setup ---
-os.makedirs("outputs/logs", exist_ok=True)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('outputs/logs/training.log'),
-        logging.StreamHandler()
-    ]
-)
+def train(experiment, no_wandb=False):
+    """Orchestrates a single training and evaluation run for a given experiment.
 
+    This function performs the following steps:
+    1.  Loads the dataset specified by the `experiment` name from the configuration.
+    2.  Initializes a Weights & Biases run (unless disabled).
+    3.  Retrieves hyperparameters from the W&B config, which allows for sweeps.
+    4.  Initializes and trains the Perceptron model.
+    5.  Evaluates the model's final accuracy on the training data.
+    6.  Uses the `Visualizer` class to generate and log all relevant plots.
+    7.  Finishes the W&B run.
 
-def train(experiment):
-    """Main function to run a selected training experiment."""
+    Args:
+        experiment (str): The name of the experiment to run (e.g., 'and', 'mnist').
+                          Must be a key in the `EXPERIMENTS` dictionary in `config.py`.
+        no_wandb (bool): If True, disables all Weights & Biases logging.
+    """
     logging.info(f"--- Starting Perceptron Training: '{experiment}' experiment ---")
 
-    # --- 1. Load Data & Set Parameters based on experiment ---
-    if experiment in config.LOGIC_GATE_DATA_PATHS:
-        data_path = config.LOGIC_GATE_DATA_PATHS[experiment]
-        logging.info(f"Loading data from: {data_path}")
-        try:
-            X, y = load_perceptron_data(data_path)
-            lr = config.LOGIC_GATE_LEARNING_RATE
-            epochs = config.LOGIC_GATE_EPOCHS
-        except FileNotFoundError:
-            logging.error(f"Error: Data file not found at {data_path}.")
-            return
-    elif experiment == 'mnist':
-        logging.info("Loading MNIST data for digits 0 and 1...")
-        X, y = load_mnist_data()
-        lr = config.MNIST_LEARNING_RATE
-        epochs = config.MNIST_EPOCHS
-    else:
-        logging.error(f"Unknown experiment: {experiment}")
+    # --- 1. Prepare Experiment ---
+    if experiment not in EXPERIMENTS:
+        logging.error(f"Unknown experiment: {experiment}. Check config.py for available experiments.")
         return
 
+    exp_config = EXPERIMENTS[experiment]
+    logging.info(f"Loading data for '{experiment}' experiment...")
+    X, y = exp_config["data_loader"]()
     logging.info(f"Data loaded successfully. Found {X.shape[0]} samples with {X.shape[1]} features.")
+
+    # --- Setup W&B ---
+    wandb_mode = "disabled" if no_wandb else "online"
+
+    wandb.init(
+        mode=wandb_mode,
+        project=WANDB_PROJECT_NAME,
+        config={
+            "learning_rate": exp_config["learning_rate"],
+            "epochs": exp_config["epochs"],
+            "experiment_type": experiment,
+        }
+    )
+    if no_wandb:
+        logging.info("Weights & Biases logging is disabled for this run.")
+    else:
+        logging.info(f"Weights & Biases run '{wandb.run.name}' initialized.")
+
+    # Initialize the visualizer
+    visualizer = Visualizer(wandb, enabled=(not no_wandb))
+
+    # Get hyperparameters from the W&B config.
+    # These will be the defaults for a single run, or provided by the sweep agent.
+    lr = wandb.config.learning_rate
+    epochs = wandb.config.epochs
+
+    # Set a more descriptive run name, especially for sweeps
+    if not no_wandb:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        run_name = f"{experiment}-{timestamp}-lr_{lr:.5f}-ep_{epochs}"
+        wandb.run.name = run_name
+        wandb.run.save()
+        logging.info(f"W&B run name updated to: {run_name}")
 
     # --- 2. Initialize and train the model ---
     logging.info(f"Initializing Perceptron with LR={lr} and Epochs={epochs}.")
@@ -66,32 +131,62 @@ def train(experiment):
 
     # --- 3. Evaluate ---
     predictions = perceptron.predict(X)
-    y_binary = np.array([1 if i > 0 else 0 for i in y])
-    accuracy = (predictions == y_binary).mean()
+    # Assuming y from data loader is already 0s and 1s
+    accuracy = (predictions == y).mean()
     logging.info(f"Final training accuracy: {accuracy:.4f}")
 
+    # Log final accuracy to W&B summary for easy comparison
+    wandb.summary["final_accuracy"] = accuracy
+
     # --- 4. Visualize ---
-    logging.info("Generating learning curve plot...")
-    plot_learning_curve(perceptron.errors_per_epoch, filename=f"learning_curve_{experiment}.png")
+    class_names = exp_config.get("class_names")
+    visualizer.log_all(
+        model=perceptron,
+        X=X,
+        y=y,
+        predictions=predictions,
+        class_names=class_names
+    )
 
-    if experiment in config.LOGIC_GATE_DATA_PATHS:
-        logging.info("Generating decision boundary plot...")
-        plot_decision_boundary(X, y, perceptron, filename=f"decision_boundary_{experiment}.png")
-    elif experiment == 'mnist':
-        logging.info("Generating model weights visualization...")
-        plot_perceptron_weights(perceptron, filename=f"perceptron_weights_{experiment}.png")
-
+    wandb.finish()
     logging.info(f"--- Experiment '{experiment}' Finished ---")
 
 
-if __name__ == "__main__":
+def main():
+    """Sets up logging, parses command-line arguments, and starts the training process.
+
+    This function acts as the main entry point when the script is executed. It
+    configures the root logger, defines the command-line interface for selecting
+    an experiment, and then calls the `train` function with the parsed arguments.
+    """
+    # --- Logging Setup ---
+    os.makedirs("outputs/logs", exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('outputs/logs/training.log'),
+            logging.StreamHandler()
+        ]
+    )
+
     parser = argparse.ArgumentParser(description="Run a Perceptron training experiment.")
     parser.add_argument(
         '--experiment',
         type=str,
         default='and',
-        choices=['and', 'xor', 'mnist'],
-        help="The experiment to run ('and', 'xor', or 'mnist')."
+        choices=list(EXPERIMENTS.keys()),
+        help=f"The experiment to run. Choices: {list(EXPERIMENTS.keys())}"
     )
-    args = parser.parse_args()
-    train(args.experiment)
+    parser.add_argument(
+        '--no-wandb',
+        action='store_true',
+        help="Disable Weights & Biases logging for this run."
+    )
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        logging.warning(f"Unrecognized arguments will be ignored: {unknown}")
+    train(args.experiment, no_wandb=args.no_wandb)
+
+if __name__ == "__main__":
+    main()
