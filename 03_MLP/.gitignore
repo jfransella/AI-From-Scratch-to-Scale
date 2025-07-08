@@ -1,3 +1,4 @@
+
 # --- Python ---
 # Byte-compiled / optimized / C extensions
 __pycache__/
@@ -35,3 +36,29 @@ dist/
 .DS_Store
 # Windows
 Thumbs.db
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environments
+.venv/
+venv/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Generated outputs from training runs
+# This includes saved models and logs.
+outputs/
+
+# Downloaded datasets
+data/
+
+# IDE configuration
+.vscode/
+.idea/
