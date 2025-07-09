@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """Configuration settings for the MLP model."""
 
+from typing import Dict, Any, Callable, List
 from src.data_loader import load_logic_gate_data, load_mnist_multiclass_data, load_mnist_failure_test_data
 
 # --- W&B Config ---
-WANDB_PROJECT_NAME = "mlp-from-scratch"
+WANDB_PROJECT_NAME: str = "mlp-from-scratch"
 
 # --- Experiment Registry ---
-EXPERIMENTS = {
+EXPERIMENTS: Dict[str, Dict[str, Any]] = {
     "xor": {
         # The XOR gate is the classic non-linearly separable problem.
         # An MLP with a hidden layer is required to solve it.
@@ -26,7 +27,7 @@ EXPERIMENTS = {
         "input_size": 784,
         "hidden_size": 128,  # A larger hidden layer for a more complex task
         "output_size": 10,   # 10 output neurons, one for each digit
-        "learning_rate": 0.01, # SGD requires a smaller learning rate
+        "learning_rate": 0.01,  # SGD requires a smaller learning_rate
         "epochs": 20,
         "class_names": [f'Digit {i}' for i in range(10)],
     },
@@ -37,7 +38,7 @@ EXPERIMENTS = {
         "input_size": 784,
         "hidden_size": 128,
         "output_size": 10,
-        "learning_rate": 0.01, # Not used when loading a model, but good to have
+        "learning_rate": 0.01,  # Not used when loading a model, but good to have
         "epochs": 20,          # Not used when loading a model
         "class_names": [f'Digit {i}' for i in range(10)],
     },
