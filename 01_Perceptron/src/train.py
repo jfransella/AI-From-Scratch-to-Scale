@@ -21,11 +21,12 @@ import sys
 import argparse
 import logging
 from datetime import datetime
+from typing import Optional
 import numpy as np
 import wandb
 
 # --- Environment Verification ---
-def _verify_virtual_environment():
+def _verify_virtual_environment() -> None:
     """
     Verifies that the script is running in the project's virtual environment.
 
@@ -61,7 +62,7 @@ from src.model import Perceptron
 from src.visualize import Visualizer
 
 # --- Logging Setup ---
-def train(experiment, no_wandb=False):
+def train(experiment: str, no_wandb: bool = False) -> None:
     """Orchestrates a single training and evaluation run for a given experiment.
 
     This function performs the following steps:
@@ -74,9 +75,9 @@ def train(experiment, no_wandb=False):
     7.  Finishes the W&B run.
 
     Args:
-        experiment (str): The name of the experiment to run (e.g., 'and', 'mnist').
-                          Must be a key in the `EXPERIMENTS` dictionary in `config.py`.
-        no_wandb (bool): If True, disables all Weights & Biases logging.
+        experiment: The name of the experiment to run (e.g., 'and', 'mnist').
+                   Must be a key in the `EXPERIMENTS` dictionary in `config.py`.
+        no_wandb: If True, disables all Weights & Biases logging.
     """
     logging.info(f"--- Starting Perceptron Training: '{experiment}' experiment ---")
 

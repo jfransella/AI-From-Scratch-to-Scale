@@ -13,43 +13,50 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import logging
+from typing import List, Optional, Any
 from sklearn.metrics import confusion_matrix
 from matplotlib.colors import ListedColormap
+from matplotlib.figure import Figure
 import wandb
+
+# Handle both relative and absolute imports
+try:
+    from .constants import DECISION_BOUNDARY_RESOLUTION, DEFAULT_FIGURE_SIZE
+except ImportError:
+    from constants import DECISION_BOUNDARY_RESOLUTION, DEFAULT_FIGURE_SIZE
 
 
 # --- Individual Plotting Functions ---
 
-def _plot_decision_boundary(X, y, model, class_names):
+def _plot_decision_boundary(X: np.ndarray, y: np.ndarray, model: Any, class_names: Optional[List[str]]) -> Figure:
     """Creates a decision boundary plot for a trained 2D classifier.
 
     This version fills the regions with color to show the classification areas
     predicted by the model.
 
     Args:
-        X (np.ndarray): The input features (must be 2D).
-        y (np.ndarray): The true labels.
-        model (Perceptron): The trained Perceptron instance.
-        class_names (list[str]): Names of the classes for the legend.
+        X: The input features (must be 2D) of shape (n_samples, 2).
+        y: The true labels of shape (n_samples,).
+        model: The trained Perceptron instance.
+        class_names: Names of the classes for the legend.
 
     Returns:
-        matplotlib.figure.Figure: The figure object containing the plot.
+        The figure object containing the plot.
     """
     if class_names is None:
         # Create default labels if none are provided
         unique_labels = np.unique(y)
         class_names = [f'Class {l}' for l in unique_labels]
 
-    fig, ax = plt.subplots()
-    resolution = 0.02
+    fig, ax = plt.subplots(figsize=DEFAULT_FIGURE_SIZE)
     # Define a colormap for the regions and points
     cmap = ListedColormap(['#FF6347', '#4682B4'])  # Tomato, SteelBlue
 
     # Create a meshgrid to plot the decision boundary
     x1_min, x1_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
     x2_min, x2_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
-    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
-                           np.arange(x2_min, x2_max, resolution))
+    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, DECISION_BOUNDARY_RESOLUTION),
+                           np.arange(x2_min, x2_max, DECISION_BOUNDARY_RESOLUTION))
 
     # Predict the class for each point in the meshgrid
     Z = model.predict(np.array([xx1.ravel(), xx2.ravel()]).T)

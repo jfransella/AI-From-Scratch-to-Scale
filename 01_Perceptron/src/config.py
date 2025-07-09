@@ -8,7 +8,14 @@ parameters without changing the core logic of the application.
 
 """
 
-from src.data_loader import load_perceptron_data, load_mnist_data, load_iris_data
+from typing import Dict, Any, Callable, Tuple, List
+import numpy as np
+
+# Handle both relative and absolute imports
+try:
+    from .data_loader import load_perceptron_data, load_mnist_data, load_iris_data
+except ImportError:
+    from data_loader import load_perceptron_data, load_mnist_data, load_iris_data
 
 # --- W&B Config ---
 WANDB_PROJECT_NAME = "perceptron-from-scratch"
@@ -17,7 +24,7 @@ WANDB_PROJECT_NAME = "perceptron-from-scratch"
 # Central place to define all parameters for each experiment.
 # This makes adding new experiments much cleaner.
 
-EXPERIMENTS = {
+EXPERIMENTS: Dict[str, Dict[str, Any]] = {
     "and": {
         # The AND gate is a very simple, linearly separable problem.
         # A high learning rate and few epochs are sufficient for convergence.
