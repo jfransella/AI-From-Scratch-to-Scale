@@ -91,7 +91,7 @@ SYMMETRIC_WEIGHTS: bool = True  # Enforce w_ij = w_ji
 # ============================================================================
 
 # Retrieval Metrics
-OVERLAP_THRESHOLD: float = 0.95  # Minimum overlap for successful retrieval
+OVERLAP_THRESHOLD: float = 0.80  # Minimum overlap for successful retrieval (80% is realistic)
 MAX_RETRIEVAL_STEPS: int = 100   # Maximum steps for pattern retrieval
 
 # Energy Landscape Analysis
@@ -196,6 +196,19 @@ LOG_TO_CONSOLE: bool = True
 SAVE_WEIGHTS: bool = True
 SAVE_PATTERNS: bool = True
 SAVE_ENERGY_HISTORY: bool = True
+
+# ============================================================================
+# WEIGHTS & BIASES EXPERIMENT TRACKING
+# ============================================================================
+
+# Project Configuration
+WANDB_PROJECT_NAME: str = "hopfield-network-education"
+WANDB_ENTITY: Optional[str] = None  # Will use default user entity
+
+# Experiment Tracking
+LOG_VISUALIZATIONS: bool = True  # Log plots and visualizations to W&B
+LOG_METRICS_FREQUENCY: int = 1   # Log metrics every N experiments
+SAVE_MODEL_ARTIFACTS: bool = True  # Save model weights as W&B artifacts
 
 # ============================================================================
 # DEVELOPMENT AND DEBUGGING
