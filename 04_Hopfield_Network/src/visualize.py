@@ -772,6 +772,44 @@ def plot_spatial_invariance_results(results: List[Dict], labels: List[str], over
     logger.info("Spatial invariance plots saved")
 
 
+def print_spatial_educational_summary(results: List[Dict]) -> None:
+    """Print educational summary of spatial invariance demonstration."""
+    
+    print("\n" + "="*70)
+    print("EDUCATIONAL SUMMARY: Hopfield Network Spatial Invariance Limitation")
+    print("="*70)
+    
+    successful = sum(1 for r in results if r['retrieval_successful'])
+    total = len(results)
+    
+    print(f"\nRESULTS:")
+    print(f"- Successful retrievals: {successful}/{total}")
+    print(f"- Success rate: {successful/total*100:.1f}%")
+    
+    print(f"\nKEY INSIGHTS:")
+    print(f"1. POSITION DEPENDENCE: Hopfield networks store patterns at specific positions")
+    print(f"2. NO SPATIAL INVARIANCE: Shifting by even 1 pixel can cause retrieval failure")
+    print(f"3. MEMORY SPECIFICITY: Each weight w_ij connects specific pixel positions")
+    print(f"4. HISTORICAL MOTIVATION: This limitation led to convolutional architectures")
+    
+    print(f"\nWHY THIS HAPPENS:")
+    print(f"- Hopfield weights: w_ij = correlation between positions i and j")
+    print(f"- Shifting changes which positions are correlated")
+    print(f"- Network has no mechanism to recognize 'same pattern, different location'")
+    
+    print(f"\nWHAT THIS TEACHES:")
+    print(f"- CNNs solve this with weight sharing and translation equivariance")
+    print(f"- Hopfield networks are best for fixed-position pattern matching")
+    print(f"- Understanding limitations helps appreciate modern architectures")
+    
+    print(f"\nPRACTICAL IMPLICATIONS:")
+    print(f"- Hopfield networks: Good for error correction, content-addressable memory")
+    print(f"- Hopfield networks: Poor for image recognition requiring spatial invariance")
+    print(f"- Modern applications: Optimization, memory models, attention mechanisms")
+    
+    print("="*70)
+
+
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
