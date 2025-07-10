@@ -31,6 +31,36 @@ Each model implementation follows a feature branch workflow:
 
 4. **Cleanup**: Delete feature branch after successful merge
 
+### GitHub Copilot MCP Enhanced Workflow
+
+With GitHub Copilot MCP capabilities enabled, our development process is enhanced with automated GitHub integration:
+
+#### Phase 1: Planning & Issue Creation
+1. **Automatic Issue Generation**: Create comprehensive issues for each model implementation
+   - Use standardized issue templates for consistency
+   - Include mathematical learning objectives and implementation milestones
+   - Assign appropriate labels (e.g., `keystone`, `conceptual`, `side-quest`)
+
+2. **Milestone Planning**: Link issues to educational milestones
+   - Module-based milestones (e.g., "Module 1: Foundations")
+   - Learning outcome tracking and progress visualization
+
+#### Phase 2: Development with MCP Integration
+1. **Branch Creation from Issues**: Create feature branches directly linked to GitHub issues
+2. **Automated PR Creation**: Use MCP to create pull requests when implementations are ready
+3. **Copilot Code Reviews**: Request automated Copilot reviews for educational feedback
+4. **Progress Updates**: Automatically update issue status through commit messages
+
+#### Phase 3: Review & Educational Validation
+1. **Educational Quality Gates**: Use GitHub's review process to validate learning objectives
+2. **Mathematical Accuracy**: Leverage Copilot's review capabilities for mathematical correctness
+3. **Documentation Completeness**: Ensure all educational context is properly documented
+
+#### Phase 4: Integration & Knowledge Sharing
+1. **Automated Documentation**: Update project documentation when PRs are merged
+2. **Learning Path Updates**: Maintain educational progression through GitHub Projects
+3. **Community Engagement**: Use GitHub Discussions for educational insights and questions
+
 ### Commit Message Convention
 
 We follow the **Conventional Commits** specification:

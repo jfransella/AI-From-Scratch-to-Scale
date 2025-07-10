@@ -237,3 +237,41 @@ def forward_pass(X: np.ndarray, weights: np.ndarray, bias: float) -> Tuple[np.nd
 - **Commit Messages**: Follow Conventional Commits specification (feat, fix, docs, test, refactor, chore)
 - **Pull Requests**: Required for all changes to main branch
 - **Documentation**: Each model requires comprehensive README following project template
+
+## GitHub Copilot MCP Integration
+
+### Issue-Driven Development
+- **Automatic Issue Creation**: When starting a new model, create GitHub issues to track progress
+- **Issue Templates**: Use standardized issue templates for model implementation milestones
+- **Progress Tracking**: Link commits and PRs to issues using GitHub keywords (fixes #123, closes #456)
+- **Educational Documentation**: Create issues for mathematical concepts that need explanation
+
+### Enhanced Pull Request Workflow
+- **Automated PR Creation**: Use MCP to create PRs directly from VS Code when feature branches are ready
+- **Code Review Integration**: Request Copilot code reviews for educational feedback on implementations
+- **Draft PRs**: Create draft PRs early for work-in-progress visibility and collaboration
+- **Educational Context**: Include mathematical explanations and learning objectives in PR descriptions
+
+### Project Management Integration
+- **Milestone Tracking**: Create GitHub milestones for each learning module (01-04 Foundations, 05-14 Deep Learning, etc.)
+- **Assignment Workflows**: Assign Copilot to specific implementation issues for automated assistance
+- **Progress Visualization**: Use GitHub Projects to track implementation status across all 25 models
+- **Learning Path Management**: Organize issues by educational priority and dependencies
+
+### Repository Organization
+- **Branch Protection**: Use MCP to configure branch protection rules for main branch
+- **Release Management**: Create releases for completed learning modules with comprehensive documentation
+- **Wiki Integration**: Maintain educational content and mathematical derivations in GitHub Wiki
+- **Notification Management**: Configure GitHub notifications to stay updated on educational discussions
+
+### Code Quality Automation
+- **Automated Testing**: Link GitHub Actions workflows to MCP for continuous integration
+- **Code Review Requests**: Automatically request Copilot reviews for educational code quality
+- **Documentation Updates**: Use MCP to update documentation when implementations change
+- **Learning Outcome Validation**: Create issues to verify educational objectives are met
+
+### Educational Collaboration
+- **Community Engagement**: Use GitHub Discussions for mathematical questions and learning insights
+- **Student Progress**: Track learning progress through GitHub issue completion
+- **Knowledge Sharing**: Create public issues for common implementation challenges and solutions
+- **Historical Context**: Document the evolution of neural network concepts through commit history

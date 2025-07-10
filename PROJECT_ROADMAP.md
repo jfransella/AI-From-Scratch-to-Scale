@@ -273,6 +273,40 @@ Each model follows a structured development process:
 3. **Pull Request Review**: Quality gates and learning objective validation
 4. **Merge to Main**: Only completed, working implementations
 
+### GitHub Copilot MCP Integration Workflow
+
+With GitHub Copilot MCP capabilities, our development process becomes more automated and integrated:
+
+#### 1. Issue-Driven Development
+- **Automated Issue Creation**: Use Copilot MCP to create standardized issues for each model
+- **Template-Based Planning**: Leverage issue templates for consistent planning
+- **Progress Tracking**: Link commits and PRs to issues automatically
+- **Educational Milestones**: Track learning objectives through GitHub Projects
+
+#### 2. Enhanced Development Process
+- **Branch Management**: Automated branch creation from issues using MCP
+- **Real-time Collaboration**: Draft PRs for work-in-progress visibility
+- **Code Review Integration**: Request Copilot reviews for educational feedback
+- **Automated Documentation**: Update project documentation when PRs merge
+
+#### 3. Learning Management
+- **Milestone Tracking**: GitHub milestones for each educational module
+- **Progress Visualization**: Projects view for tracking 25-model journey
+- **Knowledge Sharing**: GitHub Discussions for mathematical questions
+- **Community Building**: Issues for common challenges and solutions
+
+### MCP-Enhanced Development Commands
+
+Common workflows now supported through Copilot MCP:
+
+```bash
+# Example: Starting a new model implementation
+# 1. Copilot creates issue from template
+# 2. Copilot creates feature branch
+# 3. Copilot sets up project structure
+# 4. Development proceeds with automated tracking
+```
+
 ### Commit Message Convention
 Following **Conventional Commits** specification:
 - `feat`: New features and model implementations
