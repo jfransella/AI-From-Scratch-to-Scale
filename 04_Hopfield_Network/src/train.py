@@ -35,16 +35,28 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import time
 
-from .config import (
-    NETWORK_SIZE, MAX_PATTERNS, CAPACITY_EXPERIMENT_SIZES, CAPACITY_TRIALS,
-    NOISE_EXPERIMENT_LEVELS, NOISE_TRIALS, CONVERGENCE_TRIALS,
-    OUTPUT_DIR, MODELS_DIR, PLOTS_DIR, LOGS_DIR, RANDOM_SEED, USE_FIXED_SEED,
-    WANDB_PROJECT_NAME
-)
-
-from .model import HopfieldNetwork
-from .data_loader import HopfieldDataLoader, PatternGenerator
-from .wandb_integration import initialize_wandb, finish_wandb, WandbVisualizer
+try:
+    # Try relative imports first (when run as module)
+    from .config import (
+        NETWORK_SIZE, MAX_PATTERNS, CAPACITY_EXPERIMENT_SIZES, CAPACITY_TRIALS,
+        NOISE_EXPERIMENT_LEVELS, NOISE_TRIALS, CONVERGENCE_TRIALS,
+        OUTPUT_DIR, MODELS_DIR, PLOTS_DIR, LOGS_DIR, RANDOM_SEED, USE_FIXED_SEED,
+        WANDB_PROJECT_NAME
+    )
+    from .model import HopfieldNetwork
+    from .data_loader import HopfieldDataLoader, PatternGenerator
+    from .wandb_integration import initialize_wandb, finish_wandb, WandbVisualizer
+except ImportError:
+    # Fall back to absolute imports (when run as script)
+    from config import (
+        NETWORK_SIZE, MAX_PATTERNS, CAPACITY_EXPERIMENT_SIZES, CAPACITY_TRIALS,
+        NOISE_EXPERIMENT_LEVELS, NOISE_TRIALS, CONVERGENCE_TRIALS,
+        OUTPUT_DIR, MODELS_DIR, PLOTS_DIR, LOGS_DIR, RANDOM_SEED, USE_FIXED_SEED,
+        WANDB_PROJECT_NAME
+    )
+    from model import HopfieldNetwork
+    from data_loader import HopfieldDataLoader, PatternGenerator
+    from wandb_integration import initialize_wandb, finish_wandb, WandbVisualizer
 
 # Set up logging
 logging.basicConfig(
@@ -435,7 +447,7 @@ class HopfieldTrainer:
                 self.visualizer.log_metrics({
                     f"noise_experiment/success_rate_{noise_level}": metrics['success_rate'],
                     f"noise_experiment/overlap_improvement_{noise_level}": metrics['avg_overlap_improvement'],
-                }, step=int(noise_level * 100))  # Convert to percentage for step
+                })  # Remove step parameter to avoid monotonic step warnings
         
         self._plot_noise_results(noise_results, pattern_type)
         

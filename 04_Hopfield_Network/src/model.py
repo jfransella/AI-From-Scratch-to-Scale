@@ -28,12 +28,22 @@ from typing import List, Tuple, Dict, Optional, Union
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from .config import (
-    NETWORK_SIZE, PATTERN_ON, PATTERN_OFF, UPDATE_RULE, MAX_ITERATIONS,
-    CONVERGENCE_THRESHOLD, TEMPERATURE, USE_TEMPERATURE, ZERO_DIAGONAL,
-    SYMMETRIC_WEIGHTS, LEARNING_RULE, OVERLAP_THRESHOLD, MAX_RETRIEVAL_STEPS,
-    PLOTS_DIR, MODELS_DIR, RANDOM_SEED, USE_FIXED_SEED
-)
+try:
+    # Try relative imports first (when run as module)
+    from .config import (
+        NETWORK_SIZE, PATTERN_ON, PATTERN_OFF, UPDATE_RULE, MAX_ITERATIONS,
+        CONVERGENCE_THRESHOLD, TEMPERATURE, USE_TEMPERATURE, ZERO_DIAGONAL,
+        SYMMETRIC_WEIGHTS, LEARNING_RULE, OVERLAP_THRESHOLD, MAX_RETRIEVAL_STEPS,
+        PLOTS_DIR, MODELS_DIR, RANDOM_SEED, USE_FIXED_SEED
+    )
+except ImportError:
+    # Fall back to absolute imports (when run as script)
+    from config import (
+        NETWORK_SIZE, PATTERN_ON, PATTERN_OFF, UPDATE_RULE, MAX_ITERATIONS,
+        CONVERGENCE_THRESHOLD, TEMPERATURE, USE_TEMPERATURE, ZERO_DIAGONAL,
+        SYMMETRIC_WEIGHTS, LEARNING_RULE, OVERLAP_THRESHOLD, MAX_RETRIEVAL_STEPS,
+        PLOTS_DIR, MODELS_DIR, RANDOM_SEED, USE_FIXED_SEED
+    )
 
 # Set up logging
 logger = logging.getLogger(__name__)

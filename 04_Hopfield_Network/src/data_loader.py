@@ -24,11 +24,20 @@ from typing import List, Tuple, Dict, Optional, Union
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from .config import (
-    PATTERN_HEIGHT, PATTERN_WIDTH, PATTERN_SIZE, PATTERN_ON, PATTERN_OFF,
-    PATTERN_TYPES, NOISE_LEVELS, DEFAULT_NOISE_LEVEL, MAX_PATTERNS,
-    RANDOM_SEED, USE_FIXED_SEED, PLOTS_DIR, DATA_DIR
-)
+try:
+    # Try relative imports first (when run as module)
+    from .config import (
+        PATTERN_HEIGHT, PATTERN_WIDTH, PATTERN_SIZE, PATTERN_ON, PATTERN_OFF,
+        PATTERN_TYPES, NOISE_LEVELS, DEFAULT_NOISE_LEVEL, MAX_PATTERNS,
+        RANDOM_SEED, USE_FIXED_SEED, PLOTS_DIR, DATA_DIR
+    )
+except ImportError:
+    # Fall back to absolute imports (when run as script)
+    from config import (
+        PATTERN_HEIGHT, PATTERN_WIDTH, PATTERN_SIZE, PATTERN_ON, PATTERN_OFF,
+        PATTERN_TYPES, NOISE_LEVELS, DEFAULT_NOISE_LEVEL, MAX_PATTERNS,
+        RANDOM_SEED, USE_FIXED_SEED, PLOTS_DIR, DATA_DIR
+    )
 
 # Set up logging
 logger = logging.getLogger(__name__)

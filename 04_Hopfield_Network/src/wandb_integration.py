@@ -35,10 +35,18 @@ except ImportError:
     WANDB_AVAILABLE = False
     wandb = None
 
-from .config import (
-    WANDB_PROJECT_NAME, WANDB_ENTITY, LOG_VISUALIZATIONS, 
-    SAVE_MODEL_ARTIFACTS, PLOTS_DIR
-)
+try:
+    # Try relative imports first (when run as module)
+    from .config import (
+        WANDB_PROJECT_NAME, WANDB_ENTITY, LOG_VISUALIZATIONS, 
+        SAVE_MODEL_ARTIFACTS, PLOTS_DIR
+    )
+except ImportError:
+    # Fall back to absolute imports (when run as script)
+    from config import (
+        WANDB_PROJECT_NAME, WANDB_ENTITY, LOG_VISUALIZATIONS, 
+        SAVE_MODEL_ARTIFACTS, PLOTS_DIR
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -554,7 +562,9 @@ class WandbVisualizer:
             
             # Save figure for logging
             noise_plot_path = os.path.join(PLOTS_DIR, f'noise_robustness_{pattern_type}_detailed.png')
-            os.makedirs(PLOTS_DIR, exist_ok=True)
+            # Create nested directories if needed
+            plot_dir = os.path.dirname(noise_plot_path)
+            os.makedirs(plot_dir, exist_ok=True)
             plt.savefig(noise_plot_path, dpi=300, bbox_inches='tight')
             
             # Log the figure to W&B
@@ -668,7 +678,7 @@ class WandbVisualizer:
                 success_rates = []
                 
                 for key, value in capacity_data.items():
-                    if key.endswith('_success_rate'):
+                    if isinstance(key, str) and key.endswith('_success_rate'):
                         try:
                             size = int(key.split('_')[0])
                             network_sizes.append(size)
@@ -697,7 +707,7 @@ class WandbVisualizer:
                 success_rates = []
                 
                 for key, value in noise_data.items():
-                    if 'success_rate_' in key and not key.endswith('_std'):
+                    if isinstance(key, str) and 'success_rate_' in key and not key.endswith('_std'):
                         try:
                             noise_level = float(key.split('success_rate_')[1])
                             noise_levels.append(noise_level)
@@ -755,7 +765,7 @@ class WandbVisualizer:
             if 'capacity' in experiment_results:
                 experiments.append('Capacity\nAnalysis')
                 capacity_scores = [v for k, v in experiment_results['capacity'].items() 
-                                 if k.endswith('_success_rate')]
+                                 if isinstance(k, str) and k.endswith('_success_rate')]
                 capacity_score = np.mean(capacity_scores) if capacity_scores else 0
                 performance_scores.append(capacity_score)
             
