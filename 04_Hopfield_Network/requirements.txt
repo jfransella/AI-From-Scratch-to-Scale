@@ -1,1 +1,16 @@
-numpy
+# Core dependencies for Hopfield Network implementation
+numpy>=1.21.0
+matplotlib>=3.5.0
+scipy>=1.7.0
+
+# Optional dependencies for enhanced functionality
+seaborn>=0.11.0
+tqdm>=4.62.0
+
+# Development and testing
+pytest>=6.2.0
+black>=21.0.0
+flake8>=3.9.0
+
+# Educational and experiment tracking
+wandb>=0.12.0
