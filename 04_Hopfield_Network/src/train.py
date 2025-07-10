@@ -23,6 +23,15 @@ Example usage:
     # Run without W&B tracking
     python -m src.train --no-wandb
     
+    # Run interactive console demonstration
+    python -m src.train --experiment demo --no-wandb
+    
+    # Run MNIST demonstration  
+    python -m src.train --experiment mnist
+    
+    # Run spatial invariance demonstration
+    python -m src.train --experiment spatial_invariance
+    
     # Run specific experiment
     python -m src.train --experiment capacity_analysis
 """
@@ -30,33 +39,34 @@ Example usage:
 import argparse
 import logging
 import numpy as np
-from typing import List, Dict, Tuple, Optional
 import matplotlib.pyplot as plt
+from typing import List, Dict, Tuple, Optional, Any
 from pathlib import Path
 import time
 
 try:
     # Try relative imports first (when run as module)
-    from .config import (
-        NETWORK_SIZE, MAX_PATTERNS, CAPACITY_EXPERIMENT_SIZES, CAPACITY_TRIALS,
-        NOISE_EXPERIMENT_LEVELS, NOISE_TRIALS, CONVERGENCE_TRIALS,
-        OUTPUT_DIR, MODELS_DIR, PLOTS_DIR, LOGS_DIR, RANDOM_SEED, USE_FIXED_SEED,
-        WANDB_PROJECT_NAME
-    )
+    from .config import *
+    from .data_loader import PatternGenerator, HopfieldDataLoader
     from .model import HopfieldNetwork
-    from .data_loader import HopfieldDataLoader, PatternGenerator
-    from .wandb_integration import initialize_wandb, finish_wandb, WandbVisualizer
+    from .wandb_integration import WandbVisualizer, initialize_wandb, finish_wandb
+    from .visualize import (
+        plot_capacity_results, plot_noise_robustness, 
+        plot_convergence_statistics, create_comprehensive_comparison,
+        visualize_energy_landscape, visualize_pattern_set,
+        plot_spatial_invariance_results
+    )
 except ImportError:
     # Fall back to absolute imports (when run as script)
-    from config import (
-        NETWORK_SIZE, MAX_PATTERNS, CAPACITY_EXPERIMENT_SIZES, CAPACITY_TRIALS,
-        NOISE_EXPERIMENT_LEVELS, NOISE_TRIALS, CONVERGENCE_TRIALS,
-        OUTPUT_DIR, MODELS_DIR, PLOTS_DIR, LOGS_DIR, RANDOM_SEED, USE_FIXED_SEED,
-        WANDB_PROJECT_NAME
-    )
+    from config import *
+    from data_loader import PatternGenerator, HopfieldDataLoader
     from model import HopfieldNetwork
-    from data_loader import HopfieldDataLoader, PatternGenerator
-    from wandb_integration import initialize_wandb, finish_wandb, WandbVisualizer
+    from wandb_integration import WandbVisualizer, initialize_wandb, finish_wandb
+    from visualize import (
+        plot_capacity_results, plot_noise_robustness, 
+        plot_convergence_statistics, create_comprehensive_comparison,
+        visualize_energy_landscape, visualize_pattern_set
+    )
 
 # Set up logging
 logging.basicConfig(
@@ -185,20 +195,22 @@ class HopfieldTrainer:
                 "basic_training/num_patterns": results['num_patterns']
             })
             
-            # Log pattern visualization
+            # Log pattern visualization using centralized function
             pattern_plot_path = Path(PLOTS_DIR) / f"stored_patterns_{pattern_type}.png"
-            self.data_loader.generator.visualize_pattern_set(
+            visualize_pattern_set(
                 patterns, 
                 f"Stored {pattern_type} Patterns",
-                save_path=pattern_plot_path
+                save_path=str(pattern_plot_path),
+                show=True
             )
             self.visualizer.log_image(str(pattern_plot_path), f"patterns/{pattern_type}_stored")
         else:
-            # Visualize patterns without W&B logging
-            self.data_loader.generator.visualize_pattern_set(
+            # Visualize patterns without W&B logging using centralized function
+            visualize_pattern_set(
                 patterns, 
                 f"Stored {pattern_type} Patterns",
-                save_path=Path(PLOTS_DIR) / f"stored_patterns_{pattern_type}.png"
+                save_path=str(Path(PLOTS_DIR) / f"stored_patterns_{pattern_type}.png"),
+                show=True
             )
         
         logger.info(f"Basic training results: {results}")
@@ -323,54 +335,9 @@ class HopfieldTrainer:
                     f"capacity_experiment/theoretical_ratio_{num_patterns}": metrics['theoretical_ratio'],
                 }, step=num_patterns)
         
-        self._plot_capacity_results(capacity_results)
+        plot_capacity_results(capacity_results, self.network_size, self.visualizer)
         
         return capacity_results
-    
-    def _plot_capacity_results(self, capacity_results: Dict[int, Dict[str, float]]) -> None:
-        """
-        Plot storage capacity experiment results.
-        
-        Args:
-            capacity_results: Results from capacity experiment
-        """
-        pattern_counts = list(capacity_results.keys())
-        success_rates = [capacity_results[n]['success_rate'] for n in pattern_counts]
-        error_bars = [capacity_results[n]['success_rate_std'] for n in pattern_counts]
-        theoretical_ratios = [capacity_results[n]['theoretical_ratio'] for n in pattern_counts]
-        
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-        
-        # Plot 1: Success rate vs number of patterns
-        ax1.errorbar(pattern_counts, success_rates, yerr=error_bars, 
-                    marker='o', linewidth=2, capsize=5)
-        ax1.axvline(0.15 * self.network_size, color='red', linestyle='--', 
-                   label=f'Theoretical Capacity (~{int(0.15 * self.network_size)})')
-        ax1.set_xlabel('Number of Stored Patterns')
-        ax1.set_ylabel('Retrieval Success Rate')
-        ax1.set_title('Storage Capacity vs. Performance')
-        ax1.grid(True, alpha=0.3)
-        ax1.legend()
-        
-        # Plot 2: Success rate vs theoretical capacity ratio
-        ax2.plot(theoretical_ratios, success_rates, 'bo-', linewidth=2)
-        ax2.axvline(1.0, color='red', linestyle='--', label='Theoretical Limit')
-        ax2.set_xlabel('Ratio to Theoretical Capacity')
-        ax2.set_ylabel('Retrieval Success Rate')
-        ax2.set_title('Performance vs. Theoretical Capacity')
-        ax2.grid(True, alpha=0.3)
-        ax2.legend()
-        
-        plt.tight_layout()
-        plot_path = Path(PLOTS_DIR) / 'capacity_experiment.png'
-        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-        plt.show()
-        
-        # Log plot to W&B if available
-        if self.visualizer:
-            self.visualizer.log_image(str(plot_path), "capacity_analysis/performance_plot")
-        
-        logger.info("Capacity experiment plot saved")
     
     def experiment_noise_robustness(self, pattern_type: str = "simple_shapes") -> Dict[float, Dict[str, float]]:
         """
@@ -449,52 +416,9 @@ class HopfieldTrainer:
                     f"noise_experiment/overlap_improvement_{noise_level}": metrics['avg_overlap_improvement'],
                 })  # Remove step parameter to avoid monotonic step warnings
         
-        self._plot_noise_results(noise_results, pattern_type)
+        plot_noise_robustness(noise_results, pattern_type, self.visualizer)
         
         return noise_results
-    
-    def _plot_noise_results(self, noise_results: Dict[float, Dict[str, float]], pattern_type: str) -> None:
-        """
-        Plot noise robustness experiment results.
-        
-        Args:
-            noise_results: Results from noise experiment
-            pattern_type: Type of patterns used
-        """
-        noise_levels = list(noise_results.keys())
-        success_rates = [noise_results[n]['success_rate'] for n in noise_levels]
-        success_errors = [noise_results[n]['success_rate_std'] for n in noise_levels]
-        overlap_improvements = [noise_results[n]['avg_overlap_improvement'] for n in noise_levels]
-        overlap_errors = [noise_results[n]['overlap_improvement_std'] for n in noise_levels]
-        
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-        
-        # Plot 1: Success rate vs noise level
-        ax1.errorbar(noise_levels, success_rates, yerr=success_errors,
-                    marker='o', linewidth=2, capsize=5, color='blue')
-        ax1.set_xlabel('Noise Level (Fraction of Bits Flipped)')
-        ax1.set_ylabel('Retrieval Success Rate')
-        ax1.set_title(f'Noise Robustness - {pattern_type}')
-        ax1.grid(True, alpha=0.3)
-        
-        # Plot 2: Overlap improvement vs noise level
-        ax2.errorbar(noise_levels, overlap_improvements, yerr=overlap_errors,
-                    marker='s', linewidth=2, capsize=5, color='green')
-        ax2.set_xlabel('Noise Level (Fraction of Bits Flipped)')
-        ax2.set_ylabel('Average Overlap Improvement')
-        ax2.set_title('Pattern Recovery Quality')
-        ax2.grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plot_path = Path(PLOTS_DIR) / f'noise_robustness_{pattern_type}.png'
-        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-        plt.show()
-        
-        # Log plot to W&B if available
-        if self.visualizer:
-            self.visualizer.log_image(str(plot_path), f"noise_robustness/performance_plot_{pattern_type}")
-        
-        logger.info("Noise robustness plot saved")
     
     def experiment_convergence_dynamics(self) -> Dict[str, List[float]]:
         """
@@ -566,9 +490,14 @@ class HopfieldTrainer:
         # Visualize convergence statistics
         self._plot_convergence_statistics(convergence_results)
         
-        # Visualize energy landscape
+        # Visualize energy landscape using centralized function
         energy_landscape_path = Path(PLOTS_DIR) / 'energy_landscape.png'
-        self.network.visualize_energy_landscape(save_path=energy_landscape_path)
+        visualize_energy_landscape(
+            self.network.stored_patterns, 
+            self.network.weights,
+            save_path=str(energy_landscape_path),
+            show=True
+        )
         
         # Log energy landscape to W&B if available
         if self.visualizer:
@@ -584,49 +513,18 @@ class HopfieldTrainer:
         Args:
             convergence_results: Results from convergence experiment
         """
-        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        
-        # Plot 1: Energy decrease distribution
-        axes[0, 0].hist(convergence_results['energy_decreases'], bins=20, alpha=0.7, color='blue')
-        axes[0, 0].set_xlabel('Energy Decrease')
-        axes[0, 0].set_ylabel('Frequency')
-        axes[0, 0].set_title('Distribution of Energy Decreases')
-        axes[0, 0].grid(True, alpha=0.3)
-        
-        # Plot 2: Convergence steps distribution
-        axes[0, 1].hist(convergence_results['convergence_steps'], bins=20, alpha=0.7, color='green')
-        axes[0, 1].set_xlabel('Convergence Steps')
-        axes[0, 1].set_ylabel('Frequency')
-        axes[0, 1].set_title('Distribution of Convergence Times')
-        axes[0, 1].grid(True, alpha=0.3)
-        
-        # Plot 3: Overlap improvement
-        initial_overlaps = convergence_results['initial_overlaps']
-        final_overlaps = convergence_results['final_overlaps']
-        overlap_improvements = [f - i for i, f in zip(initial_overlaps, final_overlaps)]
-        
-        axes[1, 0].scatter(initial_overlaps, overlap_improvements, alpha=0.6)
-        axes[1, 0].set_xlabel('Initial Overlap')
-        axes[1, 0].set_ylabel('Overlap Improvement')
-        axes[1, 0].set_title('Pattern Recovery vs. Initial Quality')
-        axes[1, 0].grid(True, alpha=0.3)
-        
-        # Plot 4: Example energy trajectory
-        if convergence_results['energy_histories']:
-            example_history = convergence_results['energy_histories'][0]
-            axes[1, 1].plot(example_history, 'b-', linewidth=2, marker='o', markersize=4)
-            axes[1, 1].set_xlabel('Iteration')
-            axes[1, 1].set_ylabel('Energy')
-            axes[1, 1].set_title('Example Energy Convergence')
-            axes[1, 1].grid(True, alpha=0.3)
-        
-        plt.tight_layout()
         plot_path = Path(PLOTS_DIR) / 'convergence_statistics.png'
-        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-        plt.show()
+        
+        # Use centralized visualization function
+        fig = plot_convergence_statistics(
+            convergence_results, 
+            title="Convergence Dynamics Analysis",
+            save_path=str(plot_path),
+            show=True
+        )
         
         # Log plot to W&B if available
-        if self.visualizer:
+        if self.visualizer and plot_path.exists():
             self.visualizer.log_image(str(plot_path), "convergence_analysis/statistics_plot")
         
         logger.info("Convergence statistics plot saved")
@@ -788,7 +686,7 @@ class HopfieldTrainer:
         
         # Create summary comparison plots
         if self.visualizer:
-            self.visualizer.create_comprehensive_comparison(self.experiment_results)
+            create_comprehensive_comparison(self.experiment_results)
         
         logger.info("Comprehensive visualizations created")
     
@@ -892,6 +790,481 @@ class HopfieldTrainer:
         logger.info(f"Basic training results: {results}")
         return results
 
+    @staticmethod
+    def corrupt_pattern(pattern: np.ndarray, num_flips: int = 5) -> np.ndarray:
+        """
+        Flips a specified number of bits in a pattern for testing recall.
+
+        Args:
+            pattern: The original pattern to corrupt
+            num_flips: The number of bits to flip
+
+        Returns:
+            The corrupted pattern with flipped bits
+            
+        Educational Focus:
+            Simulates real-world noise in stored memories to test
+            the network's error correction capabilities.
+        """
+        corrupted = np.copy(pattern)
+        # Choose random indices to flip without replacement
+        flip_indices = np.random.choice(len(pattern), size=num_flips, replace=False)
+        # Flip the bits at the chosen indices (-1 becomes 1, and 1 becomes -1)
+        corrupted[flip_indices] *= -1
+        return corrupted
+
+    def run_interactive_demo(self) -> Dict[str, Any]:
+        """
+        Run an interactive console demonstration of the Hopfield Network.
+        
+        This provides immediate visual feedback for educational purposes,
+        showing the complete pattern storage and recall process step-by-step.
+        
+        Returns:
+            Dictionary with demo results
+            
+        Educational Focus:
+            Interactive learning experience showing:
+            - Pattern storage (Hebbian learning)
+            - Noise corruption simulation
+            - Associative memory recall
+            - Capacity limitations with increasing patterns
+        """
+        from .visualize import display_pattern
+        
+        logger.info("Starting Interactive Hopfield Network Demonstration")
+        print("\n" + "="*60)
+        print("HOPFIELD NETWORK INTERACTIVE DEMONSTRATION")
+        print("="*60)
+        
+        # Load educational letter patterns directly from the generator
+        patterns_dict = self.data_loader.generator.get_educational_letters()
+        all_patterns_list = list(patterns_dict.values())
+        all_patterns_names = list(patterns_dict.keys())
+        
+        demo_results = {
+            'single_recall_success': False,
+            'capacity_test_results': [],
+            'total_patterns_tested': len(all_patterns_list)
+        }
+        
+        # --- Single Pattern Recall Demonstration ---
+        print("\n--- Single Pattern Recall Demonstration ---")
+        network = HopfieldNetwork(size=len(all_patterns_list[0]))
+        
+        # Train on the first 3 patterns
+        training_patterns = all_patterns_list[:3]
+        network.store_patterns(training_patterns)
+        print(f"Stored 3 patterns: {all_patterns_names[:3]}")
+        
+        # Demonstrate recall with pattern 'C'
+        original_pattern_name = 'C'
+        original_pattern = patterns_dict[original_pattern_name]
+        
+        print(f"\nOriginal Pattern '{original_pattern_name}':")
+        display_pattern(original_pattern, title=f"Original Pattern '{original_pattern_name}'")
+        
+        # Corrupt the pattern
+        corrupted = self.corrupt_pattern(original_pattern, num_flips=5)
+        print("\nCorrupted Pattern (5 bits flipped):")
+        display_pattern(corrupted, title="Corrupted Pattern")
+        
+        # Recall the pattern
+        recalled_pattern, _ = network.retrieve_pattern(corrupted)
+        print("\nRecalled Pattern:")
+        display_pattern(recalled_pattern, title="Recalled Pattern")
+        
+        # Check if recall was successful
+        demo_results['single_recall_success'] = np.array_equal(recalled_pattern, original_pattern)
+        success_msg = "✓ SUCCESS!" if demo_results['single_recall_success'] else "✗ FAILED"
+        print(f"\nRecall Result: {success_msg}")
+        
+        print("\n" + "="*40 + "\n")
+        
+        # --- Network Capacity Test Demonstration ---
+        print("--- Network Capacity Test ---")
+        print("Testing how many patterns the network can reliably store...")
+        
+        original_pattern_to_test = patterns_dict['C']
+        corrupted_to_test = self.corrupt_pattern(original_pattern_to_test, num_flips=5)
+        
+        # Test capacity with increasing number of patterns
+        for num_stored in range(1, len(all_patterns_list) + 1):
+            print(f"\n--- Testing with {num_stored} stored pattern(s) ---")
+            patterns_to_store = all_patterns_list[:num_stored]
+            pattern_names = all_patterns_names[:num_stored]
+            
+            # Create fresh network for each test
+            test_network = HopfieldNetwork(size=len(all_patterns_list[0]))
+            test_network.store_patterns(patterns_to_store)
+            print(f"Storing: {pattern_names}")
+            
+            # Attempt to recall the corrupted 'C'
+            recalled, _ = test_network.retrieve_pattern(corrupted_to_test)
+            
+            # Check success
+            recall_successful = np.array_equal(recalled, original_pattern_to_test)
+            demo_results['capacity_test_results'].append({
+                'num_patterns': num_stored,
+                'pattern_names': pattern_names.copy(),
+                'recall_successful': recall_successful
+            })
+            
+            if recall_successful:
+                print("✓ Recall successful!")
+                display_pattern(recalled, title="Recalled 'C' Correctly")
+            else:
+                print("✗ Recall FAILED.")
+                display_pattern(recalled, title="Incorrectly Recalled Pattern")
+                print(f"Network capacity exceeded at {num_stored} patterns.")
+                break
+        
+        # Summary
+        successful_recalls = sum(1 for result in demo_results['capacity_test_results'] 
+                               if result['recall_successful'])
+        print(f"\n" + "="*60)
+        print("DEMONSTRATION SUMMARY")
+        print("="*60)
+        print(f"Single pattern recall: {'SUCCESS' if demo_results['single_recall_success'] else 'FAILED'}")
+        print(f"Maximum capacity demonstrated: {successful_recalls} patterns")
+        print(f"Theoretical capacity (0.138 * N): ~{int(0.138 * len(all_patterns_list[0]))} patterns")
+        print("="*60)
+        
+        # Log results to W&B if available
+        if self.visualizer:
+            self.visualizer.log_metrics({
+                "demo/single_recall_success": 1.0 if demo_results['single_recall_success'] else 0.0,
+                "demo/max_capacity_demonstrated": successful_recalls,
+                "demo/theoretical_capacity": int(0.138 * len(all_patterns_list[0])),
+                "demo/total_patterns_available": len(all_patterns_list)
+            })
+        
+        return demo_results
+
+    def run_mnist_demonstration(self, wandb_visualizer=None) -> Dict[str, Any]:
+        """
+        Demonstrate Hopfield network storage and retrieval with MNIST digits.
+        
+        This demonstrates the network's capabilities and limitations when scaling
+        to realistic datasets like MNIST handwritten digits.
+        
+        Args:
+            wandb_visualizer: Optional W&B visualizer for logging results
+            
+        Returns:
+            Dictionary with MNIST demonstration results
+            
+        Educational Focus:
+            - Real-world data challenges for associative memory
+            - Storage capacity limitations with high-dimensional patterns
+            - Pattern correlation effects on memory retrieval
+            - Comparison with modern deep learning approaches
+        """
+        logger.info("Starting MNIST demonstration...")
+        
+        # Import MNIST functions here to avoid top-level imports
+        from .mnist_demo import (
+            create_synthetic_mnist, preprocess_mnist_for_hopfield,
+            select_representative_digits, test_pattern_retrieval,
+            add_noise_to_patterns, create_mnist_visualization,
+            print_mnist_summary
+        )
+        
+        # Create synthetic MNIST-like data
+        train_images, train_labels, test_images, test_labels = create_synthetic_mnist()
+        
+        # Preprocess for Hopfield network
+        train_binary = preprocess_mnist_for_hopfield(train_images)
+        test_binary = preprocess_mnist_for_hopfield(test_images)
+        
+        # Select representative digits (1 example per class = 10 total patterns)
+        stored_patterns, stored_labels = select_representative_digits(
+            train_binary, train_labels, digits_per_class=1
+        )
+        
+        logger.info(f"Selected {len(stored_patterns)} patterns for storage")
+        
+        # Create and configure Hopfield network for MNIST size
+        network = HopfieldNetwork(size=784)  # 28x28 = 784 neurons
+        
+        # Store the patterns
+        logger.info("Storing patterns in Hopfield network...")
+        network.store_patterns(stored_patterns)
+        
+        # Test retrieval with the stored patterns themselves
+        logger.info("Testing perfect retrieval...")
+        perfect_results = test_pattern_retrieval(network, stored_patterns, stored_labels, "Perfect")
+        
+        # Test with noisy versions
+        logger.info("Testing noisy retrieval...")
+        noisy_patterns = add_noise_to_patterns(stored_patterns, noise_level=0.1)
+        noisy_results = test_pattern_retrieval(network, noisy_patterns, stored_labels, "Noisy (10%)")
+        
+        # Test with test set examples
+        logger.info("Testing with unseen examples...")
+        test_patterns, test_digit_labels = select_representative_digits(
+            test_binary, test_labels, digits_per_class=5
+        )
+        test_results = test_pattern_retrieval(network, test_patterns, test_digit_labels, "Unseen")
+        
+        # Create visualizations
+        create_mnist_visualization(stored_patterns, stored_labels, perfect_results, 
+                                 noisy_results, test_results, wandb_visualizer)
+        
+        # Log results to W&B if available
+        if self.visualizer:
+            self.visualizer.log_metrics({
+                "mnist/perfect_success_rate": perfect_results['successful_retrievals'] / perfect_results['total_tests'],
+                "mnist/noisy_success_rate": noisy_results['successful_retrievals'] / noisy_results['total_tests'], 
+                "mnist/test_success_rate": test_results['successful_retrievals'] / test_results['total_tests'],
+                "mnist/network_size": 784,
+                "mnist/stored_patterns": len(stored_patterns),
+                "mnist/theoretical_capacity": int(0.15 * 784)
+            })
+        
+        # Print comprehensive summary
+        print_mnist_summary(perfect_results, noisy_results, test_results, len(stored_patterns))
+        
+        return {
+            'perfect_results': perfect_results,
+            'noisy_results': noisy_results,
+            'test_results': test_results
+        }
+
+    def create_shifted_patterns(self, pattern: np.ndarray, shifts: List[Tuple[int, int]]) -> List[np.ndarray]:
+        """
+        Create shifted versions of a pattern to test spatial invariance.
+        
+        Args:
+            pattern: Original binary pattern (flattened)
+            shifts: List of (row_shift, col_shift) tuples
+            
+        Returns:
+            List of shifted patterns
+            
+        Educational Focus:
+            Demonstrates why Hopfield networks fail with spatial translations,
+            providing motivation for convolutional architectures.
+        """
+        # Reshape to 2D for shifting
+        size = int(np.sqrt(len(pattern)))
+        pattern_2d = pattern.reshape(size, size)
+        
+        shifted_patterns = []
+        
+        for row_shift, col_shift in shifts:
+            # Create shifted pattern with zero padding
+            shifted = np.zeros_like(pattern_2d)
+            
+            # Calculate valid regions
+            src_row_start = max(0, -row_shift)
+            src_row_end = min(size, size - row_shift)
+            src_col_start = max(0, -col_shift)
+            src_col_end = min(size, size - col_shift)
+            
+            dst_row_start = max(0, row_shift)
+            dst_row_end = dst_row_start + (src_row_end - src_row_start)
+            dst_col_start = max(0, col_shift)
+            dst_col_end = dst_col_start + (src_col_end - src_col_start)
+            
+            # Copy valid region
+            if src_row_end > src_row_start and src_col_end > src_col_start:
+                shifted[dst_row_start:dst_row_end, dst_col_start:dst_col_end] = \
+                    pattern_2d[src_row_start:src_row_end, src_col_start:src_col_end]
+            
+            shifted_patterns.append(shifted.flatten())
+        
+        return shifted_patterns
+
+    def create_spatial_invariance_plot(self, results: List[Dict], labels: List[str], overlaps: List[float]) -> None:
+        """Create visualization showing spatial invariance failure."""
+        
+        n_patterns = len(results)
+        size = int(np.sqrt(len(results[0]['input_pattern'])))
+        
+        # Create subplot grid
+        fig, axes = plt.subplots(3, n_patterns, figsize=(2*n_patterns, 6))
+        fig.suptitle('Hopfield Network Spatial Invariance Limitation', fontsize=16)
+        
+        for i, (result, label) in enumerate(zip(results, labels)):
+            # Input pattern
+            axes[0, i].imshow(result['input_pattern'].reshape(size, size), 
+                             cmap='RdBu', vmin=-1, vmax=1)
+            axes[0, i].set_title(f'Input: {label}')
+            axes[0, i].axis('off')
+            
+            # Retrieved pattern
+            axes[1, i].imshow(result['retrieved_pattern'].reshape(size, size), 
+                             cmap='RdBu', vmin=-1, vmax=1)
+            axes[1, i].set_title(f'Retrieved')
+            axes[1, i].axis('off')
+            
+            # Overlap score
+            color = 'green' if result['retrieval_successful'] else 'red'
+            axes[2, i].bar(0, result['overlap_with_original'], color=color, alpha=0.7)
+            axes[2, i].set_ylim(0, 1)
+            axes[2, i].set_title(f'Overlap: {result["overlap_with_original"]:.2f}')
+            axes[2, i].set_xticks([])
+            axes[2, i].axhline(y=0.8, color='black', linestyle='--', alpha=0.5)
+        
+        # Add row labels
+        axes[0, 0].set_ylabel('Input Pattern', fontsize=12)
+        axes[1, 0].set_ylabel('Retrieved Pattern', fontsize=12)
+        axes[2, 0].set_ylabel('Overlap Score', fontsize=12)
+        
+        plt.tight_layout()
+        plot_path = Path(PLOTS_DIR) / 'spatial_invariance_limitation.png'
+        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        # Create summary plot
+        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+        
+        colors = ['green' if overlap > 0.8 else 'red' for overlap in overlaps]
+        bars = ax.bar(range(len(labels)), overlaps, color=colors, alpha=0.7)
+        
+        ax.set_xlabel('Shift Type')
+        ax.set_ylabel('Overlap with Original Pattern')
+        ax.set_title('Spatial Invariance Test Results\n(Red = Failed Retrieval, Green = Successful)')
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=45, ha='right')
+        ax.axhline(y=0.8, color='black', linestyle='--', alpha=0.5, label='Success Threshold')
+        ax.set_ylim(0, 1)
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        summary_path = Path(PLOTS_DIR) / 'spatial_invariance_summary.png'
+        plt.savefig(summary_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        logger.info("Spatial invariance plots saved")
+
+    def print_spatial_educational_summary(self, results: List[Dict]) -> None:
+        """Print educational summary of spatial invariance demonstration."""
+        
+        print("\n" + "="*70)
+        print("EDUCATIONAL SUMMARY: Hopfield Network Spatial Invariance Limitation")
+        print("="*70)
+        
+        successful = sum(1 for r in results if r['retrieval_successful'])
+        total = len(results)
+        
+        print(f"\nRESULTS:")
+        print(f"- Successful retrievals: {successful}/{total}")
+        print(f"- Success rate: {successful/total*100:.1f}%")
+        
+        print(f"\nKEY INSIGHTS:")
+        print(f"1. POSITION DEPENDENCE: Hopfield networks store patterns at specific positions")
+        print(f"2. NO SPATIAL INVARIANCE: Shifting by even 1 pixel can cause retrieval failure")
+        print(f"3. MEMORY SPECIFICITY: Each weight w_ij connects specific pixel positions")
+        print(f"4. HISTORICAL MOTIVATION: This limitation led to convolutional architectures")
+        
+        print(f"\nWHY THIS HAPPENS:")
+        print(f"- Hopfield weights: w_ij = correlation between positions i and j")
+        print(f"- Shifting changes which positions are correlated")
+        print(f"- Network has no mechanism to recognize 'same pattern, different location'")
+        
+        print(f"\nWHAT THIS TEACHES:")
+        print(f"- CNNs solve this with weight sharing and translation equivariance")
+        print(f"- Hopfield networks are best for fixed-position pattern matching")
+        print(f"- Understanding limitations helps appreciate modern architectures")
+        
+        print(f"\nPRACTICAL IMPLICATIONS:")
+        print(f"- Hopfield networks: Good for error correction, content-addressable memory")
+        print(f"- Hopfield networks: Poor for image recognition requiring spatial invariance")
+        print(f"- Modern applications: Optimization, memory models, attention mechanisms")
+        
+        print("="*70)
+
+    def run_spatial_invariance_demo(self) -> Dict[str, Any]:
+        """
+        Demonstrate that Hopfield networks cannot handle spatial translations.
+        
+        This is an important educational demonstration showing why position-specific
+        associative memory is insufficient for real-world pattern recognition.
+        
+        Returns:
+            Dictionary with spatial invariance test results
+            
+        Educational Focus:
+            Shows fundamental limitations that motivated convolutional architectures:
+            - Position-specific pattern storage
+            - Failure with spatial translations
+            - Motivation for weight sharing in CNNs
+        """
+        logger.info("Running spatial invariance limitation demonstration...")
+        
+        # Create network with appropriate size for simple patterns
+        network = HopfieldNetwork(size=100)  # 10x10 patterns
+        
+        # Create a simple digit pattern (e.g., a cross shape)
+        from .data_loader import create_simple_digit
+        original_pattern = create_simple_digit('cross', size=10)
+        
+        # Store the original pattern
+        network.store_patterns([original_pattern])
+        logger.info(f"Stored original pattern at center position")
+        
+        # Test shifts
+        shifts = [(0, 0), (1, 0), (0, 1), (1, 1), (2, 0), (0, 2), (-1, 0), (0, -1)]
+        shift_labels = ['Original', 'Down 1', 'Right 1', 'Down+Right 1', 
+                       'Down 2', 'Right 2', 'Up 1', 'Left 1']
+        
+        # Create shifted versions
+        shifted_patterns = self.create_shifted_patterns(original_pattern, shifts)
+        
+        # Test retrieval for each shifted pattern
+        results = []
+        overlaps = []
+        
+        for i, (shifted_pattern, label) in enumerate(zip(shifted_patterns, shift_labels)):
+            # Retrieve using shifted pattern as input
+            retrieved, retrieval_info = network.retrieve_pattern(shifted_pattern)
+            
+            # Calculate overlap with original stored pattern
+            final_overlap = np.mean(retrieved == original_pattern)
+            
+            result = {
+                'shift': shifts[i],
+                'label': label,
+                'input_pattern': shifted_pattern,
+                'retrieved_pattern': retrieved,
+                'overlap_with_original': final_overlap,
+                'retrieval_successful': final_overlap > 0.8,
+                'convergence_steps': retrieval_info.get('steps', 0)
+            }
+            
+            results.append(result)
+            overlaps.append(final_overlap)
+            
+            logger.info(f"{label}: overlap = {final_overlap:.3f}, "
+                       f"successful = {final_overlap > 0.8}")
+        
+        # Create visualization
+        plot_spatial_invariance_results(results, shift_labels, overlaps)
+        
+        # Print educational summary
+        self.print_spatial_educational_summary(results)
+        
+        # Log results to W&B if available
+        if self.visualizer:
+            successful_retrievals = sum(1 for r in results if r['retrieval_successful'])
+            self.visualizer.log_metrics({
+                "spatial_invariance/success_rate": successful_retrievals / len(results),
+                "spatial_invariance/original_success": results[0]['retrieval_successful'],
+                "spatial_invariance/shifted_failures": len(results) - successful_retrievals - 1,
+                "spatial_invariance/avg_overlap": np.mean(overlaps),
+                "spatial_invariance/worst_overlap": np.min(overlaps[1:])  # Exclude original
+            })
+        
+        return {
+            'test_results': results,
+            'success_rate': successful_retrievals / len(results),
+            'total_tests': len(results),
+            'successful_retrievals': successful_retrievals,
+            'average_overlap': np.mean(overlaps)
+        }
 
 def parse_arguments():
     """Parse command line arguments for Hopfield Network training."""
@@ -906,7 +1279,7 @@ def parse_arguments():
     parser.add_argument(
         '--experiment',
         type=str,
-        choices=['all', 'basic', 'capacity', 'noise', 'convergence', 'mnist'],
+        choices=['all', 'basic', 'capacity', 'noise', 'convergence', 'mnist', 'demo', 'spatial_invariance'],
         default='all',
         help='Which experiment to run (default: all)'
     )
@@ -1020,14 +1393,21 @@ def main() -> None:
             
         elif args.experiment == 'mnist':
             logger.info("Running MNIST demonstration...")
-            from .mnist_demo import demonstrate_mnist_storage
-            mnist_results = demonstrate_mnist_storage(visualizer)
+            mnist_results = trainer.run_mnist_demonstration(visualizer)
             if visualizer:
-                visualizer.log_experiment_results("mnist_demonstration", {
-                    'perfect_success_rate': mnist_results['perfect_results']['successful_retrievals'] / mnist_results['perfect_results']['total_tests'],
-                    'noisy_success_rate': mnist_results['noisy_results']['successful_retrievals'] / mnist_results['noisy_results']['total_tests'],
-                    'test_success_rate': mnist_results['test_results']['successful_retrievals'] / mnist_results['test_results']['total_tests']
-                })
+                visualizer.log_experiment_results("mnist_demonstration", mnist_results)
+        
+        elif args.experiment == 'demo':
+            logger.info("Running interactive demonstration...")
+            demo_results = trainer.run_interactive_demo()
+            if visualizer:
+                visualizer.log_experiment_results("interactive_demo", demo_results)
+        
+        elif args.experiment == 'spatial_invariance':
+            logger.info("Running spatial invariance demonstration...")
+            spatial_results = trainer.run_spatial_invariance_demo()
+            if visualizer:
+                visualizer.log_experiment_results("spatial_invariance_demo", spatial_results)
         
         # Create experiment summary for W&B
         if visualizer and trainer.experiment_results:

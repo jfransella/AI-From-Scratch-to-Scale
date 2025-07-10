@@ -20,9 +20,16 @@ import logging
 from pathlib import Path
 import os
 
-from model import HopfieldNetwork
-from data_loader import create_simple_digit
-from config import PLOTS_DIR
+try:
+    # Try relative imports first (when run as module)
+    from .model import HopfieldNetwork
+    from .data_loader import create_simple_digit
+    from .config import PLOTS_DIR
+except ImportError:
+    # Fall back to absolute imports (when run as script)
+    from model import HopfieldNetwork
+    from data_loader import create_simple_digit
+    from config import PLOTS_DIR
 
 logger = logging.getLogger(__name__)
 

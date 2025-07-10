@@ -25,8 +25,6 @@ content-addressable memory, bridging neuroscience and physics.
 import logging
 import numpy as np
 from typing import List, Tuple, Dict, Optional, Union
-import matplotlib.pyplot as plt
-from pathlib import Path
 
 try:
     # Try relative imports first (when run as module)
@@ -36,6 +34,7 @@ try:
         SYMMETRIC_WEIGHTS, LEARNING_RULE, OVERLAP_THRESHOLD, MAX_RETRIEVAL_STEPS,
         PLOTS_DIR, MODELS_DIR, RANDOM_SEED, USE_FIXED_SEED
     )
+    from .visualize import visualize_energy_landscape, visualize_convergence
 except ImportError:
     # Fall back to absolute imports (when run as script)
     from config import (
@@ -44,6 +43,7 @@ except ImportError:
         SYMMETRIC_WEIGHTS, LEARNING_RULE, OVERLAP_THRESHOLD, MAX_RETRIEVAL_STEPS,
         PLOTS_DIR, MODELS_DIR, RANDOM_SEED, USE_FIXED_SEED
     )
+    from visualize import visualize_energy_landscape, visualize_convergence
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -458,101 +458,6 @@ class HopfieldNetwork:
             logger.info(f"Capacity test: {num_patterns} patterns -> {capacity_results[num_patterns]:.2f} success rate")
         
         return capacity_results
-    
-    def visualize_energy_landscape(self, pattern_subset: Optional[List[np.ndarray]] = None, 
-                                  num_samples: int = 1000, save_path: Optional[str] = None) -> None:
-        """
-        Visualize the energy landscape of the network.
-        
-        Args:
-            pattern_subset: Subset of patterns to highlight
-            num_samples: Number of random states to sample for energy
-            save_path: Optional path to save the figure
-            
-        Educational Value:
-            Shows how stored patterns create low-energy attractors in
-            the state space, illustrating the energy-based paradigm.
-        """
-        if not self.stored_patterns:
-            logger.warning("No patterns stored. Cannot visualize energy landscape.")
-            return
-        
-        # Sample random states and calculate energies
-        random_energies = []
-        for _ in range(num_samples):
-            random_state = np.random.choice([PATTERN_OFF, PATTERN_ON], size=self.size)
-            energy = self._calculate_energy(random_state)
-            random_energies.append(energy)
-        
-        # Calculate energies of stored patterns
-        stored_energies = []
-        for pattern in self.stored_patterns:
-            energy = self._calculate_energy(pattern)
-            stored_energies.append(energy)
-        
-        # Create visualization
-        plt.figure(figsize=(12, 8))
-        
-        # Plot random state energies as histogram
-        plt.hist(random_energies, bins=50, alpha=0.7, density=True, 
-                label='Random States', color='lightblue')
-        
-        # Plot stored pattern energies as vertical lines
-        for i, energy in enumerate(stored_energies):
-            plt.axvline(energy, color='red', linestyle='--', alpha=0.8,
-                       label='Stored Patterns' if i == 0 else "")
-        
-        plt.xlabel('Energy', fontsize=12)
-        plt.ylabel('Density', fontsize=12)
-        plt.title('Energy Landscape of Hopfield Network', fontsize=14, fontweight='bold')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        
-        # Add text with network info
-        info_text = f"Network Size: {self.size}\nStored Patterns: {len(self.stored_patterns)}"
-        plt.text(0.02, 0.98, info_text, transform=plt.gca().transAxes, 
-                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
-        
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Energy landscape saved to {save_path}")
-        
-        plt.show()
-    
-    def visualize_convergence(self, energy_history: List[float], 
-                             title: str = "Energy Convergence", save_path: Optional[str] = None) -> None:
-        """
-        Visualize the energy convergence during pattern retrieval.
-        
-        Args:
-            energy_history: List of energy values over time
-            title: Title for the plot
-            save_path: Optional path to save the figure
-            
-        Educational Purpose:
-            Demonstrates the Lyapunov property - energy always decreases
-            during asynchronous updates, guaranteeing convergence.
-        """
-        plt.figure(figsize=(10, 6))
-        
-        plt.plot(energy_history, 'b-', linewidth=2, marker='o', markersize=4)
-        plt.xlabel('Iteration', fontsize=12)
-        plt.ylabel('Energy', fontsize=12)
-        plt.title(title, fontsize=14, fontweight='bold')
-        plt.grid(True, alpha=0.3)
-        
-        # Highlight energy decrease
-        if len(energy_history) > 1:
-            energy_decrease = energy_history[0] - energy_history[-1]
-            plt.text(0.02, 0.98, f'Energy Decrease: {energy_decrease:.4f}', 
-                    transform=plt.gca().transAxes, verticalalignment='top',
-                    bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.8))
-        
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Convergence plot saved to {save_path}")
-        
-        plt.show()
     
     def save_model(self, filepath: str) -> None:
         """

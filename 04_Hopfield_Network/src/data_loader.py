@@ -21,7 +21,6 @@ Mathematical Context:
 import logging
 import numpy as np
 from typing import List, Tuple, Dict, Optional, Union
-import matplotlib.pyplot as plt
 from pathlib import Path
 
 try:
@@ -38,6 +37,13 @@ except ImportError:
         PATTERN_TYPES, NOISE_LEVELS, DEFAULT_NOISE_LEVEL, MAX_PATTERNS,
         RANDOM_SEED, USE_FIXED_SEED, PLOTS_DIR, DATA_DIR
     )
+
+try:
+    # Try relative imports first (when run as module)
+    from .visualize import visualize_pattern, visualize_pattern_set
+except ImportError:
+    # Fall back to absolute imports (when run as script)
+    from visualize import visualize_pattern, visualize_pattern_set
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -191,6 +197,77 @@ class PatternGenerator:
         logger.info(f"Generated {len(patterns)} letter patterns")
         return patterns
     
+    def get_educational_letters(self) -> Dict[str, np.ndarray]:
+        """
+        Get the classic educational letter patterns (C, L, I, T, X, O).
+        
+        These are the original 5x5 patterns used in basic Hopfield demonstrations,
+        originally defined in data.py. Moved here for centralized pattern management.
+        
+        Returns:
+            Dictionary mapping letter names to bipolar patterns
+            
+        Educational Focus:
+            Simple, recognizable patterns perfect for understanding
+            basic associative memory concepts and pattern completion.
+        """
+        # Define patterns as 2D lists of 0s and 1s for readability
+        _classic_patterns = {
+            'C': [
+                [1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0],
+                [1, 1, 1, 1, 1],
+            ],
+            'L': [
+                [1, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0],
+                [1, 1, 1, 1, 1],
+            ],
+            'I': [
+                [1, 1, 1, 1, 1],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+                [1, 1, 1, 1, 1],
+            ],
+            'T': [
+                [1, 1, 1, 1, 1],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 1, 0, 0],
+            ],
+            'X': [
+                [1, 0, 0, 0, 1],
+                [0, 1, 0, 1, 0],
+                [0, 0, 1, 0, 0],
+                [0, 1, 0, 1, 0],
+                [1, 0, 0, 0, 1],
+            ],
+            'O': [
+                [1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1],
+            ],
+        }
+        
+        patterns = {}
+        for name, pattern_2d in _classic_patterns.items():
+            # Flatten the 2D list and convert to a NumPy array
+            flat_pattern = np.array(pattern_2d).flatten()
+            # Convert from (0, 1) to bipolar (-1, 1) which is required by the model
+            bipolar_pattern = np.where(flat_pattern == 0, PATTERN_OFF, PATTERN_ON)
+            patterns[name] = bipolar_pattern
+            
+        logger.info(f"Generated {len(patterns)} classic educational letter patterns")
+        return patterns
+    
     def generate_random_patterns(self, num_patterns: int, density: float = 0.5) -> List[np.ndarray]:
         """
         Generate random binary patterns.
@@ -269,84 +346,6 @@ class PatternGenerator:
         
         overlap = np.mean(pattern1 * pattern2)
         return overlap
-    
-    def visualize_pattern(self, pattern: np.ndarray, title: str = "Pattern", 
-                         save_path: Optional[str] = None) -> None:
-        """
-        Visualize a binary pattern as a grid.
-        
-        Args:
-            pattern: Binary pattern to visualize
-            title: Title for the plot
-            save_path: Optional path to save the figure
-        """
-        # Reshape pattern to 2D grid
-        grid = pattern.reshape(self.height, self.width)
-        
-        plt.figure(figsize=(6, 6))
-        plt.imshow(grid, cmap='RdBu', vmin=-1, vmax=1)
-        plt.title(title, fontsize=14, fontweight='bold')
-        plt.colorbar(label='Neuron State')
-        
-        # Add grid lines
-        plt.grid(True, alpha=0.3)
-        plt.xticks(range(self.width))
-        plt.yticks(range(self.height))
-        
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Pattern visualization saved to {save_path}")
-        
-        plt.show()
-    
-    def visualize_pattern_set(self, patterns: Dict[str, np.ndarray], 
-                             title: str = "Pattern Set", save_path: Optional[str] = None) -> None:
-        """
-        Visualize multiple patterns in a grid layout.
-        
-        Args:
-            patterns: Dictionary of pattern_name -> pattern_array
-            title: Overall title for the figure
-            save_path: Optional path to save the figure
-        """
-        num_patterns = len(patterns)
-        cols = int(np.ceil(np.sqrt(num_patterns)))
-        rows = int(np.ceil(num_patterns / cols))
-        
-        fig, axes = plt.subplots(rows, cols, figsize=(3*cols, 3*rows))
-        fig.suptitle(title, fontsize=16, fontweight='bold')
-        
-        # Handle single pattern case
-        if num_patterns == 1:
-            axes = [axes]
-        elif rows == 1:
-            axes = axes.reshape(1, -1)
-        
-        pattern_items = list(patterns.items())
-        
-        for idx, (name, pattern) in enumerate(pattern_items):
-            row, col = idx // cols, idx % cols
-            ax = axes[row, col] if rows > 1 else axes[col]
-            
-            grid = pattern.reshape(self.height, self.width)
-            im = ax.imshow(grid, cmap='RdBu', vmin=-1, vmax=1)
-            ax.set_title(name, fontweight='bold')
-            ax.set_xticks([])
-            ax.set_yticks([])
-        
-        # Hide empty subplots
-        for idx in range(num_patterns, rows * cols):
-            row, col = idx // cols, idx % cols
-            ax = axes[row, col] if rows > 1 else axes[col]
-            ax.axis('off')
-        
-        plt.tight_layout()
-        
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            logger.info(f"Pattern set visualization saved to {save_path}")
-        
-        plt.show()
     
     def create_simple_digit(self, digit_type: str, size: int = 10) -> np.ndarray:
         """
