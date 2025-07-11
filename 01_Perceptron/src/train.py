@@ -109,7 +109,7 @@ def train(experiment: str, no_wandb: bool = False) -> None:
         logging.info(f"Weights & Biases run '{wandb.run.name}' initialized.")
 
     # Initialize the wandb visualizer
-    visualizer = PerceptronWandbVisualizer() if not no_wandb else None
+    visualizer = PerceptronWandbVisualizer(wandb.run) if not no_wandb else None
 
     # Get hyperparameters from the W&B config.
     # These will be the defaults for a single run, or provided by the sweep agent.
@@ -121,7 +121,6 @@ def train(experiment: str, no_wandb: bool = False) -> None:
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         run_name = f"{experiment}-{timestamp}-lr_{lr:.5f}-ep_{epochs}"
         wandb.run.name = run_name
-        wandb.run.save()
         logging.info(f"W&B run name updated to: {run_name}")
 
     # --- 2. Initialize and train the model ---

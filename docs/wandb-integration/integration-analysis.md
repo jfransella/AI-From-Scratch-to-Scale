@@ -60,7 +60,7 @@ def finish_wandb(wandb_run: Optional[Any])
 
 ## **🏗️ Proposed Base Class Architecture**
 
-### **BaseWandbVisualizer** (shared/utils/wandb_integration.py)
+### **BaseWandbVisualizer** (ai_from_scratch_shared package)
 ```python
 class BaseWandbVisualizer:
     """Base class for W&B integration across all models."""
@@ -199,7 +199,7 @@ shared/
 ## **🚀 Implementation Plan**
 
 ### **Phase 1: Create Base Framework**
-1. Create `shared/utils/wandb_integration.py` with `BaseWandbVisualizer`
+1. Create `ai_from_scratch_shared` package with `BaseWandbVisualizer`
 2. Extract common methods from Hopfield implementation
 3. Define abstract methods for model-specific functionality
 

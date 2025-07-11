@@ -30,7 +30,6 @@ Mathematical Background:
 import logging
 from typing import Tuple, Optional, List
 import numpy as np
-import wandb
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +74,7 @@ class MLP:
         output_size: int, 
         learning_rate: float = 0.1, 
         epochs: int = 10000, 
-        random_seed: Optional[int] = 42,
-        wandb_run: Optional[object] = None
+        random_seed: Optional[int] = 42
     ) -> None:
         """Initializes the MLP model with Xavier weight initialization.
         
@@ -94,7 +92,6 @@ class MLP:
             learning_rate: The learning rate for gradient descent (typically 0.001-0.1)
             epochs: The number of complete passes through the training data
             random_seed: Random seed for reproducibility. Set to None for no seeding
-            wandb_run: The active wandb run object for experiment logging
             
         Raises:
             ValueError: If any size parameter is <= 0 or learning_rate <= 0
@@ -117,7 +114,6 @@ class MLP:
         self.output_size = output_size
         self.learning_rate = learning_rate
         self.epochs = epochs
-        self.wandb_run = wandb_run
 
         # Set random seed for reproducible experiments
         if random_seed is not None:
@@ -488,13 +484,6 @@ class MLP:
 
                 epoch_loss += sample_loss
 
-                # Log sample-level metrics for detailed monitoring
-                if (self.wandb_run and not self.wandb_run.run.disabled and 
-                    (sample_idx + 1) % 100 == 0):
-                    self.wandb_run.log(
-                        {"Training/Sample_Loss": float(sample_loss)}, step=global_step
-                    )
-
                 # === BACKWARD PASS (BACKPROPAGATION) ===
                 # Compute gradients using the chain rule
                 
@@ -532,10 +521,6 @@ class MLP:
             # Calculate average loss for this epoch
             epoch_loss = epoch_loss / n_samples
             self.losses.append(float(epoch_loss))
-            
-            # Log epoch-level metrics
-            if (self.wandb_run and not self.wandb_run.run.disabled):
-                self.wandb_run.log({"Training/Epoch_Loss": float(epoch_loss)}, step=global_step)
                 
             # Progress reporting
             if (epoch + 1) % max(1, self.epochs // 10) == 0:

@@ -150,7 +150,6 @@ def train(experiment: str, no_wandb: bool = False, load_model_path: Optional[str
         learning_rate=learning_rate,
         epochs=epochs,
         random_seed=DEFAULT_RANDOM_SEED,
-        wandb_run=wandb,
     )
     
     logger.info(f"🧠 Model initialized: {model}")

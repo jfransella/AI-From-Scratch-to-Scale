@@ -64,6 +64,10 @@ def _shift_image(image: np.ndarray, max_shift: int = DEFAULT_MAX_SHIFT) -> np.nd
     # mode='constant' ensures we don't wrap pixels around
     shifted_image_2d = shift(image_2d, [shift_y, shift_x], cval=0, mode='constant')
     
+    # Ensure the shifted image maintains proper normalization [0, 1]
+    # Clip any interpolation artifacts that might go outside this range
+    shifted_image_2d = np.clip(shifted_image_2d, 0, 1)
+    
     # Return flattened image to maintain consistent interface
     return shifted_image_2d.flatten().astype(np.float32)
 

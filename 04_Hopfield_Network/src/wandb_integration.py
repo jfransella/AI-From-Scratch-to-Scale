@@ -28,6 +28,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.figure
 
+# Import from standardized shared package  
+from ai_from_scratch_shared import BaseWandbVisualizer, initialize_wandb, finish_wandb
+
 try:
     import wandb
     WANDB_AVAILABLE = True
@@ -49,29 +52,6 @@ except ImportError:
     )
 
 logger = logging.getLogger(__name__)
-
-# Import the base W&B integration framework
-import sys
-import os
-try:
-    # Add the project root to Python path for shared imports
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-    
-    from shared.utils.wandb_integration import BaseWandbVisualizer, initialize_wandb, finish_wandb
-    logger.info("Using shared W&B integration framework")
-except ImportError:
-    # Fall back for when shared module is not available
-    logger.warning("Shared W&B integration not found, using local implementation")
-    BaseWandbVisualizer = object  # Fallback to regular class
-    
-    # Define fallback functions
-    def initialize_wandb(*args, **kwargs):
-        return None, None
-    
-    def finish_wandb(*args, **kwargs):
-        pass
 
 
 class HopfieldWandbVisualizer(BaseWandbVisualizer):
@@ -271,6 +251,10 @@ class HopfieldWandbVisualizer(BaseWandbVisualizer):
         """
         # Save locally
         local_path = os.path.join(PLOTS_DIR, f"{name}.png")
+        
+        # Create directory structure if it doesn't exist
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        
         figure.savefig(local_path, dpi=300, bbox_inches='tight')
         
         # Log to W&B

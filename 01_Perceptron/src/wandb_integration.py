@@ -1,431 +1,303 @@
-"""
-Perceptron Weights & Biases Integration
-======================================
+"""Weights & Biases integration for Perceptron model.
 
-This module provides W&B experiment tracking specifically designed for
-Perceptron models, extending the shared base W&B integration framework.
+This module provides Perceptron-specific W&B logging capabilities by extending
+the shared base class. It focuses on binary classification visualizations and
+learning dynamics specific to the perceptron algorithm.
 
 Educational Objectives:
-- Demonstrate basic neural network experiment tracking
-- Show proper separation of visualization and experiment tracking concerns
-- Provide systematic comparison of different datasets and hyperparameters
-- Enable reproducible perceptron experiments
-
-Key Features:
-- Perceptron-specific visualizations (decision boundaries, learning curves)
-- Automatic logging of training dynamics and parameter evolution
-- Classification performance tracking and analysis
-- Integration with existing visualization functions
+- Understand professional ML experiment tracking patterns
+- Learn separation of concerns in software architecture
+- Practice inheritance with abstract base classes
+- Visualize binary classification decision boundaries
+- Track convergence behavior of iterative learning algorithms
 """
 
-import logging
-import os
-import sys
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, Optional, List
 import numpy as np
-import matplotlib.pyplot as plt
+import logging
 
-# Import the base W&B integration framework
-try:
-    # Add the project root to Python path for shared imports
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-    
-    from shared.utils.wandb_integration import BaseWandbVisualizer
-    logger = logging.getLogger(__name__)
-    logger.info("Using shared W&B integration framework")
-except ImportError:
-    # Fall back for when shared module is not available
-    logger = logging.getLogger(__name__)
-    logger.warning("Shared W&B integration not found, using local implementation")
-    BaseWandbVisualizer = object  # Fallback to regular class
+# Import from standardized shared package
+from ai_from_scratch_shared import BaseWandbVisualizer, initialize_wandb, finish_wandb
 
-# Import local visualization functions
-try:
-    from .visualize import _plot_confusion_matrix, _plot_learning_curve, _plot_decision_boundary
-except ImportError:
-    from visualize import _plot_confusion_matrix, _plot_learning_curve, _plot_decision_boundary
-
-try:
-    import wandb
-    WANDB_AVAILABLE = True
-except ImportError:
-    WANDB_AVAILABLE = False
-    wandb = None
+logger = logging.getLogger(__name__)
 
 
 class PerceptronWandbVisualizer(BaseWandbVisualizer):
-    """
-    Perceptron-specific W&B integration extending the base framework.
+    """Perceptron-specific W&B visualization and experiment tracking.
     
-    This class provides specialized experiment tracking for Perceptron models,
-    including learning curve analysis, decision boundary visualization, and
-    parameter evolution tracking.
-    
-    Educational Focus:
-    - Demonstrates inheritance from a professional base class
-    - Shows perceptron-specific metrics and visualizations
-    - Provides clean separation between plotting and logging
-    - Enables systematic hyperparameter exploration
+    This class extends BaseWandbVisualizer to provide specialized logging
+    and visualization capabilities for Perceptron experiments, focusing on:
+    - Binary classification decision boundaries
+    - Learning curve visualization
+    - Weight evolution tracking
+    - Educational insights about linear separability
     """
     
     def __init__(self, wandb_run: Optional[Any] = None, enabled: bool = True) -> None:
-        """
-        Initialize the Perceptron W&B visualizer.
+        """Initialize the Perceptron W&B visualizer.
         
         Args:
-            wandb_run: Active W&B run object
+            wandb_run: Active Weights & Biases run object
             enabled: Whether to enable W&B logging
         """
-        super().__init__(wandb_run, enabled, plots_dir="outputs/plots")
-        logger.info("Perceptron W&B visualizer initialized")
-    
-    # =================================================================
-    # ABSTRACT METHOD IMPLEMENTATIONS (REQUIRED BY BASE CLASS)
-    # =================================================================
+        super().__init__(wandb_run, enabled)
+        logger.info(f"Perceptron W&B visualizer initialized - {'enabled' if enabled else 'disabled'}")
     
     def log_model_config(self, config: Dict[str, Any]) -> None:
-        """
-        Log Perceptron-specific configuration and hyperparameters.
+        """Log perceptron model configuration (implements abstract method).
         
         Args:
-            config: Model configuration dictionary containing:
-                   - learning_rate: Learning rate for weight updates
-                   - n_iters: Maximum number of training iterations
-                   - experiment_type: Type of experiment (e.g., 'and', 'mnist')
-                   
-        Educational Focus:
-        Shows how to track the minimal set of hyperparameters that
-        characterize a perceptron model.
+            config: Dictionary containing model configuration including
+                   learning_rate, max_epochs, tolerance, etc.
         """
-        perceptron_metrics = {
-            "model/type": "Perceptron",
-            "model/learning_rate": config.get("learning_rate", 0.01),
-            "model/max_iterations": config.get("n_iters", 1000),
-            "model/experiment_type": config.get("experiment_type", "unknown"),
-            "model/total_parameters": config.get("total_parameters", 0)
+        # Extract perceptron-specific configuration
+        perceptron_config = {
+            "model_type": "Perceptron",
+            "algorithm": "Binary Classification",
+            "learning_rule": "Perceptron Learning Rule",
+            "activation": "Step Function",
+            **config  # Include all provided configuration
         }
         
-        # Add dataset information if available
-        if "dataset_size" in config:
-            perceptron_metrics["data/dataset_size"] = config["dataset_size"]
-        if "num_features" in config:
-            perceptron_metrics["data/num_features"] = config["num_features"]
-        if "num_classes" in config:
-            perceptron_metrics["data/num_classes"] = config["num_classes"]
-        
-        self.log_metrics(perceptron_metrics)
-        logger.info("Perceptron model configuration logged")
+        if self.enabled:
+            self.wandb_run.config.update(perceptron_config)
+            logger.info(f"Logged perceptron configuration: {list(perceptron_config.keys())}")
     
     def log_training_progress(self, metrics: Dict[str, Any], step: int) -> None:
-        """
-        Log Perceptron training progress metrics.
+        """Log training progress metrics (implements abstract method).
         
         Args:
-            metrics: Training metrics dictionary containing:
-                    - misclassifications: Number of misclassified samples
-                    - weights: Current weight values  
-                    - bias: Current bias value
-                    - accuracy: Current training accuracy (optional)
-            step: Training iteration/epoch number
-            
-        Educational Focus:
-        Demonstrates how to track the unique aspects of perceptron learning:
-        - Error-driven updates (misclassifications)
-        - Parameter evolution over time
-        - Convergence detection
+            metrics: Training metrics including loss, accuracy, weight updates
+            step: Current training epoch/iteration
         """
-        training_metrics = {
-            "training/misclassifications": metrics.get("misclassifications", 0),
-            "training/step": step
-        }
-        
-        # Add accuracy if available
-        if "accuracy" in metrics:
-            training_metrics["training/accuracy"] = metrics["accuracy"]
-        
-        # Log parameter statistics
-        if "weights" in metrics:
-            weights = np.array(metrics["weights"])
-            training_metrics.update({
-                "parameters/weights_mean": np.mean(weights),
-                "parameters/weights_std": np.std(weights),
-                "parameters/weights_norm": np.linalg.norm(weights)
-            })
-        
-        if "bias" in metrics:
-            training_metrics["parameters/bias"] = metrics["bias"]
-        
-        self.log_metrics(training_metrics, step=step)
-        
-        # Log parameter distributions periodically
-        if self.enabled and step % 10 == 0:  # Every 10 steps
-            self._log_parameter_distributions(metrics, step)
+        if self.enabled:
+            self.wandb_run.log(metrics, step=step)
+            logger.debug(f"Logged training progress at step {step}: {list(metrics.keys())}")
     
-    def create_model_visualizations(self, model=None, X=None, y=None, 
-                                  predictions=None, class_names=None, **kwargs) -> None:
-        """
-        Create Perceptron-specific visualizations and analysis plots.
+    def create_model_visualizations(self, **kwargs) -> None:
+        """Create perceptron-specific visualizations (implements abstract method).
         
         Args:
-            model: Trained Perceptron model
-            X: Input features
-            y: True labels
-            predictions: Model predictions
-            class_names: Names of classes for labeling
-            **kwargs: Additional visualization parameters
-            
-        Educational Focus:
-        Shows the three key visualizations for understanding perceptron behavior:
-        1. Confusion Matrix - Classification performance
-        2. Learning Curve - Training dynamics
-        3. Decision Boundary - Model's learned decision rule (for 2D data)
+            **kwargs: Visualization parameters including model, data, predictions
         """
-        if not (model and X is not None and y is not None and predictions is not None):
-            logger.warning("Insufficient data for visualizations")
-            return
+        model = kwargs.get('model')
+        X = kwargs.get('X')
+        y = kwargs.get('y')
+        predictions = kwargs.get('predictions')
         
-        try:
-            # 1. Confusion Matrix
-            self.log_confusion_matrix(y, predictions, class_names)
-            
-            # 2. Learning Curve
-            self.log_learning_curve(model.errors_per_epoch if hasattr(model, 'errors_per_epoch') else [])
-            
-            # 3. Decision Boundary (only for 2D data)
-            if X.shape[1] == 2:
-                self.log_decision_boundary(model, X, y, class_names)
-            
-            logger.info("Perceptron visualizations created successfully")
-            
-        except Exception as e:
-            logger.warning(f"Error creating perceptron visualizations: {e}")
-    
-    # =================================================================
-    # PERCEPTRON-SPECIFIC VISUALIZATION METHODS
-    # =================================================================
-    
-    def log_confusion_matrix(self, y_true: np.ndarray, y_pred: np.ndarray, 
-                           class_names: Optional[List[str]] = None) -> None:
-        """
-        Log confusion matrix visualization.
+        if model is not None and X is not None and y is not None:
+            # Create decision boundary visualization
+            self._log_decision_boundary(model, X, y)
         
-        Args:
-            y_true: True labels
-            y_pred: Predicted labels
-            class_names: Optional class names for labeling
-            
-        Educational Focus:
-        Shows how to analyze classification performance beyond simple accuracy.
-        """
-        try:
-            fig = _plot_confusion_matrix(y_true, y_pred, class_names)
-            self.log_figure(fig, "confusion_matrix", close_figure=True)
-            
-            # Log summary metrics
-            from sklearn.metrics import accuracy_score, precision_score, recall_score
-            
-            accuracy = accuracy_score(y_true, y_pred)
-            precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
-            recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
-            
-            confusion_metrics = {
-                "evaluation/accuracy": accuracy,
-                "evaluation/precision": precision,
-                "evaluation/recall": recall,
-                "evaluation/f1_score": 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-            }
-            
-            self.log_metrics(confusion_metrics)
-            
-        except Exception as e:
-            logger.warning(f"Error logging confusion matrix: {e}")
-    
-    def log_learning_curve(self, errors_per_epoch: List[int]) -> None:
-        """
-        Log learning curve showing error reduction over time.
+        if model is not None and hasattr(model, 'losses_'):
+            # Create learning curve
+            self._log_learning_curve(model.losses_)
         
-        Args:
-            errors_per_epoch: List of misclassification counts per epoch
-            
-        Educational Focus:
-        Visualizes the perceptron learning theorem in action - showing
-        how errors decrease over time for linearly separable data.
-        """
-        try:
-            if not errors_per_epoch:
-                logger.warning("No learning curve data available")
-                return
-            
-            fig = _plot_learning_curve(errors_per_epoch)
-            self.log_figure(fig, "learning_curve", close_figure=True)
-            
-            # Log learning curve statistics
-            learning_metrics = {
-                "learning/initial_errors": errors_per_epoch[0] if errors_per_epoch else 0,
-                "learning/final_errors": errors_per_epoch[-1] if errors_per_epoch else 0,
-                "learning/total_epochs": len(errors_per_epoch),
-                "learning/converged": errors_per_epoch[-1] == 0 if errors_per_epoch else False,
-                "learning/error_reduction": (errors_per_epoch[0] - errors_per_epoch[-1]) if len(errors_per_epoch) > 1 else 0
-            }
-            
-            self.log_metrics(learning_metrics)
-            
-        except Exception as e:
-            logger.warning(f"Error logging learning curve: {e}")
+        if model is not None:
+            # Log weight evolution
+            self._log_weight_analysis(model)
+        
+        if y is not None and predictions is not None:
+            # Log classification metrics
+            self._log_classification_metrics(y, predictions)
     
-    def log_decision_boundary(self, model, X: np.ndarray, y: np.ndarray, 
-                            class_names: Optional[List[str]] = None) -> None:
-        """
-        Log decision boundary visualization for 2D data.
+    def log_training_results(self, model, X: np.ndarray, y: np.ndarray, 
+                           predictions: np.ndarray, class_names: Optional[List[str]] = None) -> None:
+        """Comprehensive logging of training results and visualizations.
         
         Args:
             model: Trained perceptron model
-            X: 2D input features
+            X: Input features
             y: True labels
+            predictions: Model predictions
             class_names: Optional class names for labeling
-            
-        Educational Focus:
-        Visualizes the linear decision boundary learned by the perceptron,
-        helping students understand the geometric interpretation of the model.
         """
         try:
-            if X.shape[1] != 2:
-                logger.info("Decision boundary visualization only available for 2D data")
+            if not self.enabled:
+                logger.info("Visualization disabled - skipping training results logging")
                 return
             
-            fig = _plot_decision_boundary(X, y, model, class_names)
-            self.log_figure(fig, "decision_boundary", close_figure=True)
+            logger.info("Logging comprehensive training results...")
             
-            # Log decision boundary characteristics
-            if hasattr(model, 'weights') and hasattr(model, 'bias'):
-                weights = np.array(model.weights)
-                bias = model.bias
+            # Log model configuration
+            model_config = {
+                "learning_rate": model.learning_rate,
+                "n_iterations": model.n_iters,
+                "input_features": X.shape[1],
+                "n_samples": X.shape[0],
+                "converged": getattr(model, 'converged_', False)
+            }
+            self.log_model_config(model_config)
+            
+            # Log classification metrics
+            self._log_classification_metrics(y, predictions)
+            
+            # Generate visualizations
+            self._log_decision_boundary(model, X, y)
+            if hasattr(model, 'losses_') and model.losses_:
+                self._log_learning_curve(model.losses_)
+            self._log_weight_analysis(model)
+            
+            logger.info("Training results logging complete")
+            
+        except Exception as e:
+            logger.error(f"Failed to log training results: {e}")
+
+    def _log_decision_boundary(self, model: Any, X: np.ndarray, y: np.ndarray) -> None:
+        """Create and log decision boundary visualization."""
+        try:
+            if not self.enabled or X.shape[1] != 2:
+                return  # Only create 2D decision boundaries
+            
+            import matplotlib.pyplot as plt
+            
+            fig, ax = plt.subplots(figsize=(10, 8))
+            
+            # Create mesh for decision boundary
+            h = 0.01  # Step size in mesh
+            x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+            y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+            xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                               np.arange(y_min, y_max, h))
+            
+            # Make predictions on mesh
+            mesh_points = np.c_[xx.ravel(), yy.ravel()]
+            Z = model.predict(mesh_points)
+            Z = Z.reshape(xx.shape)
+            
+            # Plot decision boundary
+            ax.contourf(xx, yy, Z, alpha=0.3, levels=1, colors=['lightcoral', 'lightblue'])
+            ax.contour(xx, yy, Z, levels=[0.5], colors='black', linewidths=2)
+            
+            # Plot data points
+            scatter = ax.scatter(X[:, 0], X[:, 1], c=y, cmap='RdYlBu', edgecolors='black')
+            ax.set_xlabel('Feature 1')
+            ax.set_ylabel('Feature 2')
+            ax.set_title('Perceptron Decision Boundary')
+            plt.colorbar(scatter)
+            
+            self.log_figure(fig, "decision_boundary")
+            plt.close(fig)
+            
+        except Exception as e:
+            logger.warning(f"Could not create decision boundary plot: {e}")
+    
+    def _log_learning_curve(self, losses: list) -> None:
+        """Create and log learning curve visualization."""
+        try:
+            if not self.enabled or not losses:
+                return
+            
+            import matplotlib.pyplot as plt
+            
+            fig, ax = plt.subplots(figsize=(10, 6))
+            epochs = range(1, len(losses) + 1)
+            ax.plot(epochs, losses, 'b-', linewidth=2, marker='o', markersize=4)
+            ax.set_xlabel('Epoch')
+            ax.set_ylabel('Loss')
+            ax.set_title('Perceptron Learning Curve')
+            ax.grid(True, alpha=0.3)
+            
+            # Add convergence annotation if loss reaches zero
+            if losses[-1] == 0:
+                ax.annotate(f'Converged at epoch {len(losses)}', 
+                          xy=(len(losses), 0), xytext=(len(losses)*0.7, max(losses)*0.5),
+                          arrowprops=dict(arrowstyle='->', color='red'),
+                          fontsize=12, color='red')
+            
+            self.log_figure(fig, "learning_curve")
+            plt.close(fig)
+            
+        except Exception as e:
+            logger.warning(f"Could not create learning curve: {e}")
+    
+    def _log_weight_analysis(self, model: Any) -> None:
+        """Log weight analysis and evolution."""
+        try:
+            if not self.enabled or not hasattr(model, 'weights_'):
+                return
+            
+            # Log final weights
+            weight_metrics = {
+                "final_weight_norm": float(np.linalg.norm(model.weights_)),
+                "final_bias": float(model.bias_) if hasattr(model, 'bias_') else 0.0,
+                "weight_magnitude_avg": float(np.mean(np.abs(model.weights_))),
+                "weight_magnitude_max": float(np.max(np.abs(model.weights_)))
+            }
+            
+            self.log_metrics(weight_metrics)
+            
+            # Create weight histogram if we have weight history
+            if hasattr(model, 'weight_history_') and model.weight_history_:
+                import matplotlib.pyplot as plt
                 
-                boundary_metrics = {
-                    "boundary/weight_magnitude": np.linalg.norm(weights),
-                    "boundary/bias_value": bias,
-                    "boundary/slope": -weights[0] / weights[1] if weights[1] != 0 else float('inf'),
-                    "boundary/intercept": -bias / weights[1] if weights[1] != 0 else float('inf')
+                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+                
+                # Weight evolution over time
+                weight_history = np.array(model.weight_history_)
+                epochs = range(len(weight_history))
+                
+                for i in range(weight_history.shape[1]):
+                    ax1.plot(epochs, weight_history[:, i], label=f'Weight {i+1}', marker='o', markersize=3)
+                
+                ax1.set_xlabel('Epoch')
+                ax1.set_ylabel('Weight Value')
+                ax1.set_title('Weight Evolution During Training')
+                ax1.legend()
+                ax1.grid(True, alpha=0.3)
+                
+                # Final weight distribution
+                ax2.hist(model.weights_, bins=10, alpha=0.7, edgecolor='black')
+                ax2.set_xlabel('Weight Value')
+                ax2.set_ylabel('Frequency')
+                ax2.set_title('Final Weight Distribution')
+                ax2.grid(True, alpha=0.3)
+                
+                self.log_figure(fig, "weight_analysis")
+                plt.close(fig)
+                
+        except Exception as e:
+            logger.warning(f"Could not create weight analysis: {e}")
+    
+    def _log_classification_metrics(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
+        """Log binary classification metrics."""
+        try:
+            if not self.enabled:
+                return
+            
+            # Calculate basic metrics
+            accuracy = np.mean(y_true == y_pred)
+            
+            # For binary classification, calculate additional metrics
+            if len(np.unique(y_true)) == 2:
+                tp = np.sum((y_true == 1) & (y_pred == 1))
+                tn = np.sum((y_true == 0) & (y_pred == 0))
+                fp = np.sum((y_true == 0) & (y_pred == 1))
+                fn = np.sum((y_true == 1) & (y_pred == 0))
+                
+                precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+                recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+                f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+                
+                metrics = {
+                    "accuracy": float(accuracy),
+                    "precision": float(precision),
+                    "recall": float(recall),
+                    "f1_score": float(f1),
+                    "true_positives": int(tp),
+                    "true_negatives": int(tn),
+                    "false_positives": int(fp),
+                    "false_negatives": int(fn)
                 }
-                
-                self.log_metrics(boundary_metrics)
+            else:
+                metrics = {"accuracy": float(accuracy)}
+            
+            self.log_metrics(metrics)
+            logger.info(f"Logged classification metrics: accuracy={accuracy:.3f}")
             
         except Exception as e:
-            logger.warning(f"Error logging decision boundary: {e}")
-    
-    def _log_parameter_distributions(self, metrics: Dict[str, Any], step: int) -> None:
-        """
-        Log parameter distribution histograms to W&B.
-        
-        Args:
-            metrics: Metrics containing weights and bias
-            step: Current training step
-        """
-        if not self.enabled or not WANDB_AVAILABLE:
-            return
-        
-        try:
-            log_data = {}
-            
-            # Log weight distribution
-            if "weights" in metrics:
-                weights = np.array(metrics["weights"])
-                log_data["parameters/weights_histogram"] = wandb.Histogram(weights)
-            
-            # Log bias as a single value
-            if "bias" in metrics:
-                log_data["parameters/bias_value"] = metrics["bias"]
-            
-            if log_data:
-                self.wandb_run.log(log_data, step=step)
-                
-        except Exception as e:
-            logger.warning(f"Error logging parameter distributions: {e}")
-    
-    def _extract_summary_metrics(self, results: Dict[str, Any]) -> List[str]:
-        """
-        Extract key metrics for experiment summary table.
-        
-        Args:
-            results: Experiment results dictionary
-            
-        Returns:
-            List of formatted metric values
-        """
-        metrics = []
-        
-        # Final accuracy
-        final_accuracy = results.get('final_accuracy', results.get('accuracy', 0))
-        metrics.append(f"{final_accuracy:.3f}")
-        
-        # Training epochs/convergence
-        total_epochs = results.get('total_epochs', results.get('epochs', 0))
-        converged = results.get('converged', False)
-        metrics.append(f"{total_epochs} {'(conv)' if converged else '(max)'}")
-        
-        # Error reduction
-        error_reduction = results.get('error_reduction', 0)
-        metrics.append(f"{error_reduction}")
-        
-        return metrics
-    
-    def _get_summary_columns(self) -> List[str]:
-        """
-        Get column names for summary table.
-        
-        Returns:
-            List of column names
-        """
-        return ["Final Accuracy", "Training Epochs", "Error Reduction"]
+            logger.warning(f"Could not log classification metrics: {e}")
 
 
-# =================================================================
-# UTILITY FUNCTIONS FOR BACKWARD COMPATIBILITY
-# =================================================================
-
-def initialize_perceptron_wandb(project_name: str, config: Dict[str, Any], 
-                              enabled: bool = True) -> tuple:
-    """
-    Initialize W&B for perceptron experiments.
-    
-    Args:
-        project_name: W&B project name
-        config: Experiment configuration
-        enabled: Whether to enable W&B logging
-        
-    Returns:
-        Tuple of (wandb_run, perceptron_visualizer)
-    """
-    try:
-        if not enabled or not WANDB_AVAILABLE:
-            return None, PerceptronWandbVisualizer(enabled=False)
-        
-        wandb_run = wandb.init(
-            project=project_name,
-            config=config,
-            mode="online" if enabled else "disabled"
-        )
-        
-        visualizer = PerceptronWandbVisualizer(wandb_run, enabled=True)
-        return wandb_run, visualizer
-        
-    except Exception as e:
-        logger.warning(f"Failed to initialize perceptron W&B: {e}")
-        return None, PerceptronWandbVisualizer(enabled=False)
-
-
-def finish_perceptron_wandb(wandb_run) -> None:
-    """
-    Finish perceptron W&B run gracefully.
-    
-    Args:
-        wandb_run: W&B run object to finish
-    """
-    if wandb_run is not None:
-        try:
-            wandb_run.finish()
-            logger.info("Perceptron W&B run finished successfully")
-        except Exception as e:
-            logger.warning(f"Error finishing perceptron W&B run: {e}")
+# Export for backward compatibility
+__all__ = ['PerceptronWandbVisualizer', 'initialize_wandb', 'finish_wandb']

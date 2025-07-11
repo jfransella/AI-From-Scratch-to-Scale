@@ -48,8 +48,14 @@ XX_ModelName/
 - **Documentation**: Google-style docstrings with examples and mathematical explanations
 - **Testing**: Unit tests and integration tests for all core functionality
 - **Reproducibility**: Fixed random seeds, deterministic algorithms, and environment management
-- **Error Handling**: Graceful handling of edge cases and clear error messages
-- **Performance**: Vectorized operations, appropriate data types, and memory management
+
+### Experiment Tracking & Visualization
+- **Standardized W&B Integration**: Clean separation of concerns with model-agnostic experiment tracking
+- **Professional Visualization**: Consistent plotting standards across all models
+- **Educational Clarity**: Pure algorithm implementations without framework coupling
+- **Flexible Logging**: Optional W&B integration that doesn't compromise core learning objectives
+
+> **📖 W&B Integration Guide**: See [`docs/wandb-integration/`](docs/wandb-integration/) for comprehensive documentation on our experiment tracking architecture. Start with the [Quick Reference](docs/wandb-integration/quick-reference.md) for immediate implementation or read the [Architecture Guide](docs/wandb-integration/architecture-guide.md) for design principles. All models now use the standardized `ai_from_scratch_shared` package.
 
 ### Technology Stack
 - **Languages**: Python 3.8+ with modern typing features

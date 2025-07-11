@@ -1,3 +1,6 @@
+# Local packages (install first)
+-e ../ai_from_scratch_shared
+
 # Core dependencies for Hopfield Network implementation
 numpy>=1.21.0
 matplotlib>=3.5.0

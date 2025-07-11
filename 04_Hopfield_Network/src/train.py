@@ -39,6 +39,7 @@ Example usage:
 import argparse
 import logging
 import numpy as np
+import sys
 from typing import List, Dict, Tuple, Optional, Any
 from pathlib import Path
 import time
@@ -68,13 +69,20 @@ except ImportError:
     )
 
 # Set up logging
+import sys
+
+# Configure logging with proper encoding handling for Windows
+file_handler = logging.FileHandler(Path(LOGS_DIR) / 'training.log', encoding='utf-8')
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+# Configure console handler with appropriate encoding
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+# Set up root logger
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(Path(LOGS_DIR) / 'training.log'),
-        logging.StreamHandler()
-    ]
+    handlers=[file_handler, console_handler]
 )
 logger = logging.getLogger(__name__)
 
@@ -415,7 +423,19 @@ class HopfieldTrainer:
                     f"noise_experiment/overlap_improvement_{noise_level}": metrics['avg_overlap_improvement'],
                 })  # Remove step parameter to avoid monotonic step warnings
         
-        plot_noise_robustness(noise_results, pattern_type, self.visualizer)
+        # Plot noise robustness (using visualize.py function)
+        noise_plot_path = Path(PLOTS_DIR) / f'noise_robustness_{pattern_type}.png'
+        plot_noise_robustness(
+            noise_results, 
+            pattern_type, 
+            title=f"Noise Robustness Analysis - {pattern_type}",
+            save_path=str(noise_plot_path), 
+            show=True
+        )
+        
+        # Log the plot to W&B if available
+        if self.visualizer and noise_plot_path.exists():
+            self.visualizer.log_image(str(noise_plot_path), f"noise_robustness/{pattern_type}_analysis")
         
         return noise_results
     
@@ -592,7 +612,7 @@ class HopfieldTrainer:
                 f.write("STORAGE CAPACITY ANALYSIS:\n")
                 capacity = self.experiment_results['capacity']
                 for num_patterns, results in capacity.items():
-                    f.write(f"  {num_patterns} patterns: {results['success_rate']:.3f} ± {results['success_rate_std']:.3f}\n")
+                    f.write(f"  {num_patterns} patterns: {results['success_rate']:.3f} +/- {results['success_rate_std']:.3f}\n")
                 f.write("\n")
             
             # Noise robustness results
@@ -875,7 +895,7 @@ class HopfieldTrainer:
         
         # Check if recall was successful
         demo_results['single_recall_success'] = np.array_equal(recalled_pattern, original_pattern)
-        success_msg = "✓ SUCCESS!" if demo_results['single_recall_success'] else "✗ FAILED"
+        success_msg = "[SUCCESS]" if demo_results['single_recall_success'] else "[FAILED]"
         print(f"\nRecall Result: {success_msg}")
         
         print("\n" + "="*40 + "\n")
@@ -910,10 +930,10 @@ class HopfieldTrainer:
             })
             
             if recall_successful:
-                print("✓ Recall successful!")
+                print("[SUCCESS] Recall successful!")
                 display_pattern(recalled, title="Recalled 'C' Correctly")
             else:
-                print("✗ Recall FAILED.")
+                print("[FAILED] Recall FAILED.")
                 display_pattern(recalled, title="Incorrectly Recalled Pattern")
                 print(f"Network capacity exceeded at {num_stored} patterns.")
                 break
@@ -1237,6 +1257,34 @@ def main() -> None:
             network_size=args.network_size,
             wandb_visualizer=visualizer
         )
+        
+        # Create descriptive run name for W&B organization
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        
+        # Update run name based on experiment type
+        if not args.no_wandb and wandb_run:
+            if args.experiment == 'all':
+                run_name = f"comprehensive-{timestamp}-{args.pattern_type}-size{args.network_size}"
+            elif args.experiment == 'basic':
+                run_name = f"basic-{timestamp}-{args.pattern_type}-{args.patterns}patterns"
+            elif args.experiment == 'capacity':
+                run_name = f"capacity-{timestamp}-analysis-size{args.network_size}"
+            elif args.experiment == 'noise':
+                run_name = f"noise-{timestamp}-{args.pattern_type}-robustness"
+            elif args.experiment == 'convergence':
+                run_name = f"convergence-{timestamp}-{args.pattern_type}-dynamics"
+            elif args.experiment == 'mnist':
+                run_name = f"mnist-{timestamp}-demonstration"
+            elif args.experiment == 'demo':
+                run_name = f"demo-{timestamp}-interactive"
+            elif args.experiment == 'spatial_invariance':
+                run_name = f"spatial-{timestamp}-invariance-test"
+            else:
+                run_name = f"{args.experiment}-{timestamp}"
+            
+            wandb_run.name = run_name
+            logger.info(f"W&B run name updated to: {run_name}")
         
         # Run experiments based on arguments
         if args.experiment == 'all':

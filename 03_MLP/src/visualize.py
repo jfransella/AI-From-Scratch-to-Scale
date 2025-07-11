@@ -106,15 +106,17 @@ def _log_predictions_table(
         image = X[i].reshape(28, 28)
         
         # Handle edge cases where class indices might be out of bounds
+        true_label_int = int(y_true_labels[i])  # Convert to int for indexing
+        pred_label_int = int(y_pred_labels[i])  # Convert to int for indexing
         true_label = (
-            class_names[y_true_labels[i]] 
-            if y_true_labels[i] < len(class_names) 
-            else f"Class {y_true_labels[i]}"
+            class_names[true_label_int] 
+            if true_label_int < len(class_names) 
+            else f"Class {true_label_int}"
         )
         pred_label = (
-            class_names[y_pred_labels[i]] 
-            if y_pred_labels[i] < len(class_names) 
-            else f"Class {y_pred_labels[i]}"
+            class_names[pred_label_int] 
+            if pred_label_int < len(class_names) 
+            else f"Class {pred_label_int}"
         )
         
         # Determine if prediction is correct for easy filtering in wandb
@@ -339,10 +341,11 @@ def _plot_decision_boundary(
     # Plot the actual data points with class-specific colors
     for idx, class_label in enumerate(np.unique(y_labels)):
         class_mask = y_labels == class_label
+        class_label_int = int(class_label)  # Convert numpy scalar to int for indexing
         display_name = (
-            class_names[class_label] 
-            if class_label < len(class_names) 
-            else f'Class {class_label}'
+            class_names[class_label_int] 
+            if class_label_int < len(class_names) 
+            else f'Class {class_label_int}'
         )
         
         ax.scatter(
@@ -640,8 +643,8 @@ def _plot_confusion_matrix(
     
     # Calculate and display per-class recall
     class_recalls = np.diag(cm_percent)
-    worst_class = np.argmin(class_recalls)
-    best_class = np.argmax(class_recalls)
+    worst_class = int(np.argmin(class_recalls))  # Convert to int for indexing
+    best_class = int(np.argmax(class_recalls))   # Convert to int for indexing
     
     recall_text = (
         f'Best Recall: {class_names[best_class]} ({class_recalls[best_class]:.1f}%)\n'
@@ -665,6 +668,68 @@ def _plot_confusion_matrix(
     logger.debug(f"Per-class recall range: {np.min(class_recalls):.1f}% - {np.max(class_recalls):.1f}%")
     
     return fig
+
+
+# --- Public Visualization Functions (Clean API) ---
+
+def plot_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, 
+                         class_names: Optional[List[str]] = None) -> plt.Figure:
+    """Creates a confusion matrix plot.
+
+    Args:
+        y_true: Array of true labels
+        y_pred: Array of predicted labels  
+        class_names: Names of the classes for axis labels
+
+    Returns:
+        matplotlib.figure.Figure: The confusion matrix plot
+    """
+    return _plot_confusion_matrix(y_true, y_pred, class_names)
+
+
+def plot_learning_curve(losses: List[float]) -> plt.Figure:
+    """Creates a learning curve plot showing loss over epochs.
+
+    Args:
+        losses: List of loss values for each epoch
+
+    Returns:
+        matplotlib.figure.Figure: The learning curve plot
+    """
+    return _plot_loss_curve(losses)
+
+
+def plot_decision_boundary(model, X: np.ndarray, y: np.ndarray, 
+                          class_names: Optional[List[str]] = None) -> Optional[plt.Figure]:
+    """Creates a decision boundary plot (only for 2D data).
+
+    Args:
+        model: Trained MLP model with predict method
+        X: Input features (must be 2D for visualization)
+        y: True labels
+        class_names: Names of the classes for legend
+
+    Returns:
+        matplotlib.figure.Figure or None: The decision boundary plot if data is 2D
+    """
+    if X.shape[1] != 2:
+        logger.warning("Decision boundary plot only supported for 2D data")
+        return None
+    
+    return _plot_decision_boundary(X, y, model, class_names)
+
+
+def plot_neuron_weights(W1: np.ndarray, num_neurons_to_show: int = 16) -> plt.Figure:
+    """Creates a visualization of hidden layer neuron weights.
+
+    Args:
+        W1: Hidden layer weight matrix
+        num_neurons_to_show: Number of neurons to visualize
+
+    Returns:
+        matplotlib.figure.Figure: The neuron weights plot
+    """
+    return _plot_neuron_weights(W1, num_neurons_to_show)
 
 
 class Visualizer:
