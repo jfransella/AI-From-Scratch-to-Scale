@@ -15,9 +15,18 @@ Educational Objectives:
 from typing import Dict, Any, Optional, List
 import numpy as np
 import logging
+import sys
+import os
+import matplotlib.pyplot as plt
+
+# Add src directory to Python path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 # Import from standardized shared package
 from ai_from_scratch_shared import BaseWandbVisualizer, initialize_wandb, finish_wandb
+
+# Import the new shared framework visualizer
+from visualize import PerceptronVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +50,10 @@ class PerceptronWandbVisualizer(BaseWandbVisualizer):
             enabled: Whether to enable W&B logging
         """
         super().__init__(wandb_run, enabled)
+        
+        # Initialize the shared framework visualizer
+        self.visualizer = PerceptronVisualizer(enabled=enabled)
+        
         logger.info(f"Perceptron W&B visualizer initialized - {'enabled' if enabled else 'disabled'}")
     
     def log_model_config(self, config: Dict[str, Any]) -> None:
@@ -144,69 +157,41 @@ class PerceptronWandbVisualizer(BaseWandbVisualizer):
             logger.error(f"Failed to log training results: {e}")
 
     def _log_decision_boundary(self, model: Any, X: np.ndarray, y: np.ndarray) -> None:
-        """Create and log decision boundary visualization."""
+        """Create and log decision boundary visualization using shared framework."""
         try:
             if not self.enabled or X.shape[1] != 2:
                 return  # Only create 2D decision boundaries
             
-            import matplotlib.pyplot as plt
+            # Use the shared framework visualizer
+            fig = self.visualizer.plot_decision_boundary(
+                model, X, y, 
+                title="Perceptron Decision Boundary",
+                save_name=None  # Don't save to file, just return figure
+            )
             
-            fig, ax = plt.subplots(figsize=(10, 8))
-            
-            # Create mesh for decision boundary
-            h = 0.01  # Step size in mesh
-            x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-            y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-            xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                               np.arange(y_min, y_max, h))
-            
-            # Make predictions on mesh
-            mesh_points = np.c_[xx.ravel(), yy.ravel()]
-            Z = model.predict(mesh_points)
-            Z = Z.reshape(xx.shape)
-            
-            # Plot decision boundary
-            ax.contourf(xx, yy, Z, alpha=0.3, levels=1, colors=['lightcoral', 'lightblue'])
-            ax.contour(xx, yy, Z, levels=[0.5], colors='black', linewidths=2)
-            
-            # Plot data points
-            scatter = ax.scatter(X[:, 0], X[:, 1], c=y, cmap='RdYlBu', edgecolors='black')
-            ax.set_xlabel('Feature 1')
-            ax.set_ylabel('Feature 2')
-            ax.set_title('Perceptron Decision Boundary')
-            plt.colorbar(scatter)
-            
-            self.log_figure(fig, "decision_boundary")
-            plt.close(fig)
+            if fig is not None:
+                self.log_figure(fig, "decision_boundary")
+                plt.close(fig)
             
         except Exception as e:
             logger.warning(f"Could not create decision boundary plot: {e}")
     
     def _log_learning_curve(self, losses: list) -> None:
-        """Create and log learning curve visualization."""
+        """Create and log learning curve visualization using shared framework."""
         try:
             if not self.enabled or not losses:
                 return
             
-            import matplotlib.pyplot as plt
+            # Use the shared framework visualizer
+            fig = self.visualizer.plot_learning_curve(
+                losses,
+                title="Perceptron Learning Curve", 
+                save_name=None  # Don't save to file, just return figure
+            )
             
-            fig, ax = plt.subplots(figsize=(10, 6))
-            epochs = range(1, len(losses) + 1)
-            ax.plot(epochs, losses, 'b-', linewidth=2, marker='o', markersize=4)
-            ax.set_xlabel('Epoch')
-            ax.set_ylabel('Loss')
-            ax.set_title('Perceptron Learning Curve')
-            ax.grid(True, alpha=0.3)
-            
-            # Add convergence annotation if loss reaches zero
-            if losses[-1] == 0:
-                ax.annotate(f'Converged at epoch {len(losses)}', 
-                          xy=(len(losses), 0), xytext=(len(losses)*0.7, max(losses)*0.5),
-                          arrowprops=dict(arrowstyle='->', color='red'),
-                          fontsize=12, color='red')
-            
-            self.log_figure(fig, "learning_curve")
-            plt.close(fig)
+            if fig is not None:
+                self.log_figure(fig, "learning_curve")
+                plt.close(fig)
             
         except Exception as e:
             logger.warning(f"Could not create learning curve: {e}")

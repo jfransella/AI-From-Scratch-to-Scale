@@ -57,9 +57,14 @@ def _verify_virtual_environment() -> None:
 
 _verify_virtual_environment()
 
-from src.config import WANDB_PROJECT_NAME, EXPERIMENTS
-from src.model import Perceptron
-from src.wandb_integration import PerceptronWandbVisualizer
+# Add src directory to Python path for imports
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
+from config import WANDB_PROJECT_NAME, EXPERIMENTS
+from model import Perceptron
+from wandb_integration import PerceptronWandbVisualizer
 
 # --- Logging Setup ---
 def train(experiment: str, no_wandb: bool = False) -> None:

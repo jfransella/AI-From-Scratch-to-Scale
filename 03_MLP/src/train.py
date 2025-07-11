@@ -37,15 +37,21 @@ import logging
 import os
 import sys
 from datetime import datetime
+import sys
+import os
+from pathlib import Path
 from typing import Optional, Tuple
 
 import numpy as np
 import wandb
 
-from src.config import EXPERIMENTS, WANDB_PROJECT_NAME, DEFAULT_RANDOM_SEED
-from src.model import MLP
-from src.evaluate import evaluate_model, print_evaluation_report, calculate_model_robustness
-from src.visualize import Visualizer
+# Add src directory to Python path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
+from config import EXPERIMENTS, WANDB_PROJECT_NAME, DEFAULT_RANDOM_SEED
+from model import MLP
+from evaluate import evaluate_model, print_evaluation_report, calculate_model_robustness
+from visualize import Visualizer
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +230,7 @@ def train(experiment: str, no_wandb: bool = False, load_model_path: Optional[str
         logger.info(f"🔬 Performing robustness analysis...")
         
         # Load original (unmodified) test data for comparison
-        from src.data_loader import load_mnist_multiclass_data
+        from data_loader import load_mnist_multiclass_data
         _, _, X_test_original, _ = load_mnist_multiclass_data(return_test_set=True)
         
         # Calculate robustness metrics

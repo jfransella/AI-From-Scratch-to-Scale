@@ -60,8 +60,9 @@ class PerceptronVisualizer(BaseVisualizer):
             save_dir: Directory to save visualization files
             enabled: Whether to enable visualization generation
         """
-        super().__init__(model_name="Perceptron", default_save_dir=save_dir)
-        self.enabled = enabled
+        super().__init__(save_dir=save_dir, enabled=enabled)
+        
+        # Perceptron-specific color scheme
         self.perceptron_colors = {
             'class_0': '#FF6B6B',  # Warm red for class 0
             'class_1': '#4ECDC4',  # Teal for class 1
@@ -91,13 +92,13 @@ class PerceptronVisualizer(BaseVisualizer):
         if not self.enabled:
             return None
             
-        logger.info("Generating enhanced confusion matrix...")
+        logger.info("📊 Generating enhanced confusion matrix...")
         
         if class_names is None:
             class_names = ['Class 0', 'Class 1']
         
         # Create figure with shared framework styling
-        fig, _ = self.create_figure(figsize=(10, 8))
+        fig = self.create_figure(figsize=(10, 8))
         
         # Calculate confusion matrix
         from sklearn.metrics import confusion_matrix
@@ -158,14 +159,14 @@ False Negatives: {fn}"""
         
         ax_metrics.text(0.05, 0.95, metrics_text, transform=ax_metrics.transAxes,
                        verticalalignment='top', fontfamily='monospace',
-                       bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['background'],
+                       bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['background_light'],
                                 alpha=0.8), fontsize=10)
         
         # Add educational context
         ax_context = plt.subplot(2, 2, 4)
         ax_context.axis('off')
         
-        context_text = """Educational Context:
+        context_text = """📚 Educational Context:
 
 • Confusion Matrix: Visualizes classification 
   performance for binary problems
@@ -182,7 +183,7 @@ False Negatives: {fn}"""
         
         ax_context.text(0.05, 0.95, context_text, transform=ax_context.transAxes,
                        verticalalignment='top', fontsize=9,
-                       bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['secondary'],
+                       bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['accent_light'],
                                 alpha=0.7))
         
         # Add performance insights
@@ -212,12 +213,12 @@ False Negatives: {fn}"""
         if not self.enabled:
             return None
             
-        logger.info("Generating enhanced learning curve...")
+        logger.info("📈 Generating enhanced learning curve...")
         
         epochs = np.arange(1, len(errors_per_epoch) + 1)
         
         # Create figure with shared framework styling
-        fig, _ = self.create_figure(figsize=(12, 8))
+        fig = self.create_figure(figsize=(12, 8))
         
         # Main learning curve
         ax_main = plt.subplot(2, 2, (1, 2))
@@ -251,7 +252,7 @@ False Negatives: {fn}"""
         ax_math = plt.subplot(2, 2, 3)
         ax_math.axis('off')
         
-        math_text = """Mathematical Context:
+        math_text = """🔢 Mathematical Context:
 
 Perceptron Learning Rule:
 w(t+1) = w(t) + η(y - ŷ)x
@@ -269,7 +270,7 @@ is guaranteed to converge in finite steps."""
         
         ax_math.text(0.05, 0.95, math_text, transform=ax_math.transAxes,
                     verticalalignment='top', fontfamily='monospace', fontsize=9,
-                    bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['background'],
+                    bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['background_light'],
                              alpha=0.8))
         
         # Add convergence analysis
@@ -280,12 +281,12 @@ is guaranteed to converge in finite steps."""
         final_errors = errors_per_epoch[-1] if errors_per_epoch else 0
         max_errors = max(errors_per_epoch) if errors_per_epoch else 0
         
-        analysis_text = f"""Convergence Analysis:
+        analysis_text = f"""📊 Convergence Analysis:
 
 Total Epochs: {total_epochs}
 Final Errors: {final_errors}
 Maximum Errors: {max_errors}
-Converged: {'Yes' if final_errors == 0 else 'No'}
+Converged: {'✅ Yes' if final_errors == 0 else '❌ No'}
 
 Learning Behavior:
 {'• Successful convergence' if final_errors == 0 else '• May need more epochs'}
@@ -293,7 +294,7 @@ Learning Behavior:
         
         ax_analysis.text(0.05, 0.95, analysis_text, transform=ax_analysis.transAxes,
                         verticalalignment='top', fontsize=9,
-                        bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['secondary'],
+                        bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['accent_light'],
                                  alpha=0.7))
         
         plt.tight_layout()
@@ -327,13 +328,13 @@ Learning Behavior:
             logger.warning("Decision boundary plot only supported for 2D data")
             return None
             
-        logger.info("Generating enhanced decision boundary...")
+        logger.info("🎯 Generating enhanced decision boundary...")
         
         if class_names is None:
             class_names = ['Class 0', 'Class 1']
         
         # Create figure
-        fig, _ = self.create_figure(figsize=(12, 8))
+        fig = self.create_figure(figsize=(12, 8))
         
         # Main decision boundary plot
         ax_main = plt.subplot(1, 2, 1)
@@ -393,30 +394,30 @@ Learning Behavior:
         ax_context = plt.subplot(1, 2, 2)
         ax_context.axis('off')
         
-        context_text = """Educational Context:
+        context_text = """📚 Decision Boundary Analysis:
 
-Linear Separation:
+🎯 Linear Separation:
 The perceptron learns a linear decision boundary
 that separates the two classes. This boundary
-is defined by: w0*x0 + w1*x1 + b = 0
+is defined by: w₀x₀ + w₁x₁ + b = 0
 
-Learning Process:
+🧠 Learning Process:
 • Initialize weights randomly
 • For each misclassified point:
   - Adjust weights toward correct classification
 • Repeat until convergence
 
-Convergence Guarantee:
+✅ Convergence Guarantee:
 If data is linearly separable, the perceptron
 will find a separating hyperplane in finite steps.
 
-Visual Interpretation:
+📊 Visual Interpretation:
 • Points are colored by true class
 • Background shows predicted regions
 • Black line shows learned boundary
 • Misclassified points indicate complexity
 
-Key Insights:
+🔍 Key Insights:
 • Simple yet powerful algorithm
 • Foundation of neural networks
 • Limited to linear problems
@@ -424,7 +425,7 @@ Key Insights:
         
         ax_context.text(0.05, 0.95, context_text, transform=ax_context.transAxes,
                        verticalalignment='top', fontsize=10,
-                       bbox=dict(boxstyle="round,pad=0.8", facecolor=self.colors['background'],
+                       bbox=dict(boxstyle="round,pad=0.8", facecolor=self.colors['background_light'],
                                 alpha=0.9))
         
         plt.tight_layout()
@@ -479,12 +480,12 @@ Key Insights:
         logger.info("VISUALIZATION SUMMARY (Shared Framework)")
         logger.info("============================================================")
         generated_count = sum(1 for fig in figures.values() if fig is not None)
-        logger.info(f"Successfully generated {generated_count} visualizations:")
+        logger.info(f"✅ Successfully generated {generated_count} visualizations:")
         for name, fig in figures.items():
             if fig is not None:
                 logger.info(f"   • {name.replace('_', ' ').title()}")
         
-        logger.info("Enhanced with shared framework features:")
+        logger.info("📚 Enhanced with shared framework features:")
         logger.info("   • Mathematical context annotations")
         logger.info("   • Performance insights")
         logger.info("   • Educational explanations")

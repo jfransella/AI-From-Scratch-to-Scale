@@ -49,11 +49,12 @@ try:
     from .config import *
     from .data_loader import PatternGenerator, HopfieldDataLoader
     from .model import HopfieldNetwork
-    from .wandb_integration import HopfieldWandbVisualizer, initialize_wandb, finish_wandb
+    # from .wandb_integration import HopfieldWandbVisualizer, initialize_wandb, finish_wandb  # Temporarily disabled
+    from .visualize import HopfieldVisualizer, display_pattern
+    # Legacy visualization functions for specific experiments
     from .visualize import (
         plot_capacity_results, plot_noise_robustness, 
         plot_convergence_statistics, create_comprehensive_comparison,
-        visualize_energy_landscape, visualize_pattern_set,
         plot_spatial_invariance_results
     )
 except ImportError:
@@ -61,11 +62,13 @@ except ImportError:
     from config import *
     from data_loader import PatternGenerator, HopfieldDataLoader
     from model import HopfieldNetwork
-    from wandb_integration import HopfieldWandbVisualizer, initialize_wandb, finish_wandb
+    # from wandb_integration import HopfieldWandbVisualizer, initialize_wandb, finish_wandb  # Temporarily disabled
+    from visualize import HopfieldVisualizer, display_pattern
+    # Legacy visualization functions for specific experiments
     from visualize import (
         plot_capacity_results, plot_noise_robustness, 
         plot_convergence_statistics, create_comprehensive_comparison,
-        visualize_energy_landscape, visualize_pattern_set
+        display_pattern
     )
 
 # Set up logging
@@ -96,16 +99,19 @@ class HopfieldTrainer:
     """
     
     def __init__(self, network_size: int = NETWORK_SIZE, 
-                 wandb_visualizer: Optional[HopfieldWandbVisualizer] = None):
+                 wandb_visualizer: Optional[Any] = None):  # Changed to Any for now
         """
         Initialize the trainer.
         
         Args:
             network_size: Size of the Hopfield network
-            wandb_visualizer: Optional W&B visualizer for experiment tracking
+            wandb_visualizer: Optional W&B visualizer for experiment tracking (temporarily disabled)
         """
         self.network_size = network_size
         self.network = HopfieldNetwork(network_size)
+        
+        # Initialize the new shared framework visualizer
+        self.shared_visualizer = HopfieldVisualizer(default_save_dir=Path(PLOTS_DIR))
         
         # Calculate pattern dimensions for the given network size
         # Find the best rectangular dimensions that exactly match network size
@@ -202,18 +208,19 @@ class HopfieldTrainer:
                 "basic_training/num_patterns": results['num_patterns']
             })
             
-            # Log pattern visualization using centralized function
+            # Log pattern visualization using shared framework
             pattern_plot_path = Path(PLOTS_DIR) / f"stored_patterns_{pattern_type}.png"
-            visualize_pattern_set(
+            self.shared_visualizer.visualize_pattern_set(
                 patterns, 
                 f"Stored {pattern_type} Patterns",
                 save_path=str(pattern_plot_path),
                 show=True
             )
-            self.visualizer.log_image(str(pattern_plot_path), f"patterns/{pattern_type}_stored")
+            if self.visualizer:
+                self.visualizer.log_image(str(pattern_plot_path), f"patterns/{pattern_type}_stored")
         else:
-            # Visualize patterns without W&B logging using centralized function
-            visualize_pattern_set(
+            # Visualize patterns using shared framework
+            self.shared_visualizer.visualize_pattern_set(
                 patterns, 
                 f"Stored {pattern_type} Patterns",
                 save_path=str(Path(PLOTS_DIR) / f"stored_patterns_{pattern_type}.png"),
@@ -509,9 +516,9 @@ class HopfieldTrainer:
         # Visualize convergence statistics
         self._plot_convergence_statistics(convergence_results)
         
-        # Visualize energy landscape using centralized function
+        # Visualize energy landscape using shared framework
         energy_landscape_path = Path(PLOTS_DIR) / 'energy_landscape.png'
-        visualize_energy_landscape(
+        self.shared_visualizer.visualize_energy_landscape(
             self.network.stored_patterns, 
             self.network.weights,
             save_path=str(energy_landscape_path),
@@ -796,12 +803,13 @@ class HopfieldTrainer:
                 "basic_training/training_time": training_time
             })
         
-        # Log pattern visualization
+        # Log pattern visualization using shared framework
         pattern_plot_path = Path(PLOTS_DIR) / f"stored_patterns_{pattern_type}.png"
-        self.data_loader.generator.visualize_pattern_set(
+        self.shared_visualizer.visualize_pattern_set(
             patterns, 
             f"Stored {pattern_type} Patterns",
-            save_path=pattern_plot_path
+            save_path=str(pattern_plot_path),
+            show=True
         )
         if self.visualizer:
             self.visualizer.log_image(str(pattern_plot_path), f"patterns/{pattern_type}_stored")
@@ -981,16 +989,19 @@ class HopfieldTrainer:
         """
         logger.info("Starting MNIST demonstration...")
         
-        # Import MNIST functions here to avoid top-level imports
-        from .mnist_demo import (
-            create_synthetic_mnist, preprocess_mnist_for_hopfield,
-            select_representative_digits, test_pattern_retrieval,
-            add_noise_to_patterns, create_mnist_visualization,
-            print_mnist_summary
-        )
+        # TODO: MNIST demo functions need to be implemented
+        # from .mnist_demo import (
+        #     create_synthetic_mnist, preprocess_mnist_for_hopfield,
+        #     select_representative_digits, test_pattern_retrieval,
+        #     add_noise_to_patterns, create_mnist_visualization,
+        #     print_mnist_summary
+        # )
         
-        # Create synthetic MNIST-like data
-        train_images, train_labels, test_images, test_labels = create_synthetic_mnist()
+        logger.warning("MNIST demonstration not yet implemented with shared framework")
+        return {"message": "MNIST demo not implemented yet"}
+        
+        # # Create synthetic MNIST-like data
+        # train_images, train_labels, test_images, test_labels = create_synthetic_mnist()
         
         # Preprocess for Hopfield network
         train_binary = preprocess_mnist_for_hopfield(train_images)
@@ -1245,11 +1256,13 @@ def main() -> None:
         "random_seed": RANDOM_SEED if USE_FIXED_SEED else None
     }
     
-    wandb_run, visualizer = initialize_wandb(
-        project_name=WANDB_PROJECT_NAME,
-        config=config,
-        enabled=not args.no_wandb
-    )
+    # Temporarily disable wandb integration
+    # wandb_run, visualizer = initialize_wandb(
+    #     project_name=WANDB_PROJECT_NAME,
+    #     config=config,
+    #     enabled=not args.no_wandb
+    # )
+    wandb_run, visualizer = None, None
     
     try:
         # Initialize trainer with W&B visualizer
@@ -1385,8 +1398,9 @@ def main() -> None:
         logger.error(f"Training failed: {e}")
         raise
     finally:
-        # Finish W&B run
-        finish_wandb(wandb_run)
+        # Temporarily disable wandb cleanup
+        # finish_wandb(wandb_run)
+        pass
 
 
 if __name__ == "__main__":

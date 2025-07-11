@@ -630,9 +630,9 @@ class HopfieldVisualizer(BaseVisualizer):
         return fig, ax
 
 
-# Console display function for pattern visualization
+# Backwards compatibility functions that maintain existing API
 def display_pattern(pattern: np.ndarray, title: str = "Pattern") -> None:
-    """Console display of pattern for debugging and quick visualization."""
+    """Console display of pattern (backwards compatibility)."""
     size = int(np.sqrt(len(pattern)))
     pattern_2d = pattern.reshape(size, size)
     
@@ -646,14 +646,13 @@ def display_pattern(pattern: np.ndarray, title: str = "Pattern") -> None:
     print("-" * (size * 2 + 1))
 
 
-# Additional wrapper functions needed by other modules
-def visualize_pattern(pattern: np.ndarray,
-                     title: str = "Pattern",
-                     save_path: Optional[str] = None,
-                     show: bool = True) -> None:
-    """Wrapper for single pattern visualization."""
+def visualize_pattern_set(patterns: Dict[str, np.ndarray],
+                         title: str = "Pattern Set",
+                         save_path: Optional[str] = None,
+                         show: bool = True) -> None:
+    """Backwards compatible pattern set visualization."""
     viz = HopfieldVisualizer()
-    viz.visualize_pattern(pattern, title, save_path, show)
+    viz.visualize_pattern_set(patterns, title, save_path, show)
     viz.cleanup_figures()
 
 
@@ -661,39 +660,28 @@ def visualize_energy_landscape(stored_patterns: List[np.ndarray],
                               weights: np.ndarray,
                               save_path: Optional[str] = None,
                               show: bool = True) -> None:
-    """Wrapper for energy landscape visualization."""
+    """Backwards compatible energy landscape visualization."""
     viz = HopfieldVisualizer()
     viz.visualize_energy_landscape(stored_patterns, weights, save_path=save_path, show=show)
     viz.cleanup_figures()
 
 
-def visualize_convergence(convergence_data: Dict[str, List[float]],
-                         title: str = "Convergence Analysis",
-                         save_path: Optional[str] = None,
-                         show: bool = True) -> None:
-    """Wrapper for convergence visualization."""
+def plot_convergence_statistics(convergence_results: Dict[str, List[float]],
+                               title: str = "Convergence Statistics",
+                               save_path: Optional[str] = None,
+                               show: bool = True) -> None:
+    """Backwards compatible convergence statistics plotting."""
     viz = HopfieldVisualizer()
-    viz.plot_convergence_analysis(convergence_data, title, save_path, show)
+    viz.plot_convergence_analysis(convergence_results, title, save_path, show)
     viz.cleanup_figures()
 
 
-def visualize_pattern_set(patterns: Dict[str, np.ndarray],
-                         title: str = "Pattern Set",
-                         save_path: Optional[str] = None,
-                         show: bool = True) -> None:
-    """Wrapper for pattern set visualization."""
-    viz = HopfieldVisualizer()
-    viz.visualize_pattern_set(patterns, title, save_path, show)
-    viz.cleanup_figures()
-
-
-# Wrapper functions for compatibility with existing training scripts
 def plot_capacity_results(capacity_results: Dict[int, Dict[str, float]],
                          network_size: int,
                          wandb_visualizer=None,
                          save_path: Optional[str] = None,
                          show: bool = True) -> None:
-    """Wrapper for capacity results plotting."""
+    """Backwards compatible capacity results plotting."""
     viz = HopfieldVisualizer()
     viz.plot_capacity_analysis(capacity_results, network_size, save_path=save_path, show=show)
     viz.cleanup_figures()
@@ -704,24 +692,14 @@ def plot_noise_robustness(noise_results: Dict[float, Dict[str, float]],
                          title: str = "Noise Robustness",
                          save_path: Optional[str] = None,
                          show: bool = True) -> None:
-    """Wrapper for noise robustness plotting."""
+    """Backwards compatible noise robustness plotting."""
     viz = HopfieldVisualizer()
     viz.plot_noise_robustness(noise_results, f"{title} - {pattern_type}", save_path, show)
     viz.cleanup_figures()
 
 
-def plot_convergence_statistics(convergence_results: Dict[str, List[float]],
-                               title: str = "Convergence Statistics",
-                               save_path: Optional[str] = None,
-                               show: bool = True) -> None:
-    """Wrapper for convergence statistics plotting."""
-    viz = HopfieldVisualizer()
-    viz.plot_convergence_analysis(convergence_results, title, save_path, show)
-    viz.cleanup_figures()
-
-
 def create_comprehensive_comparison(experiment_results: Dict[str, Any]) -> None:
-    """Wrapper for comprehensive comparison plotting."""
+    """Backwards compatible comprehensive comparison plotting."""
     viz = HopfieldVisualizer()
     
     # Create comprehensive visualization combining all results
@@ -739,38 +717,8 @@ def create_comprehensive_comparison(experiment_results: Dict[str, Any]) -> None:
     viz.cleanup_figures()
 
 
+# Legacy functions for existing imports
 def plot_spatial_invariance_results(*args, **kwargs):
     """Placeholder for spatial invariance results."""
     logger.warning("plot_spatial_invariance_results not yet implemented with shared framework")
     pass
-
-
-# Additional wrapper functions needed by model.py
-def visualize_energy_landscape(stored_patterns: List[np.ndarray],
-                              weights: np.ndarray,
-                              save_path: Optional[str] = None,
-                              show: bool = True) -> None:
-    """Wrapper for energy landscape visualization."""
-    viz = HopfieldVisualizer()
-    viz.visualize_energy_landscape(stored_patterns, weights, save_path=save_path, show=show)
-    viz.cleanup_figures()
-
-
-def visualize_convergence(convergence_data: Dict[str, List[float]],
-                         title: str = "Convergence Analysis",
-                         save_path: Optional[str] = None,
-                         show: bool = True) -> None:
-    """Wrapper for convergence visualization."""
-    viz = HopfieldVisualizer()
-    viz.plot_convergence_analysis(convergence_data, title, save_path, show)
-    viz.cleanup_figures()
-
-
-def visualize_pattern_set(patterns: Dict[str, np.ndarray],
-                         title: str = "Pattern Set",
-                         save_path: Optional[str] = None,
-                         show: bool = True) -> None:
-    """Wrapper for pattern set visualization."""
-    viz = HopfieldVisualizer()
-    viz.visualize_pattern_set(patterns, title, save_path, show)
-    viz.cleanup_figures()

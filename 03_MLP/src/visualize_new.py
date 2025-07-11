@@ -309,9 +309,6 @@ class MLPVisualizer(BaseVisualizer):
         if y.ndim > 1 and y.shape[1] > 1:
             y = np.argmax(y, axis=1)
         
-        # Ensure y is 1D for proper boolean indexing
-        y = y.flatten()
-        
         # Create figure
         fig, ax = self.create_figure(figsize='decision_boundary')
         
@@ -326,44 +323,26 @@ class MLPVisualizer(BaseVisualizer):
         mesh_points = np.c_[xx.ravel(), yy.ravel()]
         Z = model.predict(mesh_points)
         
-        # Handle model output format - ensure it's 1D
-        if Z.ndim > 1:
-            if Z.shape[1] > 1:
-                # Multi-class: take argmax
-                Z = np.argmax(Z, axis=1)
-            else:
-                # Binary with shape (n, 1): flatten
-                Z = Z.flatten()
+        # Handle model output format
+        if Z.ndim > 1 and Z.shape[1] > 1:
+            Z = np.argmax(Z, axis=1)
         
-        # Ensure Z is 1D before reshaping
-        Z = Z.flatten()
         Z = Z.reshape(xx.shape)
         
         # Plot decision boundary
         n_classes = len(np.unique(y))
+        colors = [self.classification_colors.get(f'class_{i}', self.colors['primary']) 
+                 for i in range(n_classes)]
         
-        # Create color mapping ensuring we have enough colors
-        available_colors = [self.colors['primary'], self.colors['secondary'], 
-                          self.colors['accent'], self.colors['error']]
-        colors = []
-        for i in range(n_classes):
-            color_key = f'class_{i}'
-            if color_key in self.classification_colors:
-                colors.append(self.classification_colors[color_key])
-            else:
-                colors.append(available_colors[i % len(available_colors)])
-        
-        # Plot decision boundary with contours
         ax.contourf(xx, yy, Z, alpha=0.3, colors=colors)
         
-        # Plot data points for each class
+        # Plot data points
         for class_idx in range(n_classes):
             mask = (y == class_idx)
             if np.any(mask):
                 label = class_names[class_idx] if class_names else f'Class {class_idx}'
-                color = colors[class_idx] if class_idx < len(colors) else self.colors['primary']
                 ax.scatter(X[mask, 0], X[mask, 1], 
-                          c=color, 
+                          c=colors[class_idx], 
                           label=label,
                           alpha=0.8,
                           edgecolors='black',

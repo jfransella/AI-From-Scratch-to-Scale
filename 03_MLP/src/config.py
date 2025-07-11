@@ -11,7 +11,7 @@ Educational Context:
 """
 
 from typing import Dict, Any, Callable, List
-from src.data_loader import load_logic_gate_data, load_mnist_multiclass_data, load_mnist_failure_test_data
+from data_loader import load_logic_gate_data, load_mnist_multiclass_data, load_mnist_failure_test_data
 
 # --- Weights & Biases Configuration ---
 WANDB_PROJECT_NAME: str = "mlp-from-scratch"
@@ -32,6 +32,7 @@ MAX_IMAGES_TO_LOG: int = 16
 MAX_NEURONS_TO_VISUALIZE: int = 16
 PLOT_RESOLUTION: float = 0.02
 FIGURE_DPI: int = 300
+PLOTS_DIR: str = "outputs/plots"
 
 # --- Experiment Registry ---
 # Each experiment defines a complete configuration for training and evaluation
