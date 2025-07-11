@@ -10,7 +10,6 @@ efficient numerical operations.
 import logging
 from typing import Optional, List
 import numpy as np
-import wandb
 
 # Handle both relative and absolute imports
 try:
@@ -96,9 +95,7 @@ class Perceptron:
 
         The fitting process involves iterating over the dataset for `n_iters`
         epochs. In each epoch, the model updates its weights and bias for each
-        misclassified sample. It also logs training metrics (accuracy, updates)
-        and parameter distributions to Weights & Biases at the end of each epoch
-        if W&B is enabled.
+        misclassified sample.
 
         Args:
             X: The training input samples of shape (n_samples, n_features).
@@ -154,31 +151,6 @@ class Perceptron:
 
             # Log progress at a debug level to avoid cluttering the main console
             self.logger.debug(f"Epoch {i+1}/{self.n_iters} completed. Updates: {errors_this_epoch}, Accuracy: {accuracy:.4f}")
-            
-            # --- Log metrics and visualizations to Weights & Biases if enabled ---
-            if wandb.run is not None and not wandb.run.disabled:
-                log_data = {
-                    "Training/Accuracy": accuracy,
-                    "Training/Updates": errors_this_epoch,
-                    "Parameters/Weights_Dist": wandb.Histogram(self.weights),
-                    "Parameters/Bias_Dist": wandb.Histogram(self.bias),
-                }
-
-                # For MNIST, visualize the weights as an image
-                if n_features == MNIST_IMAGE_SIZE:
-                    # Reshape weights to a 28x28 image
-                    img_weights = self.weights.reshape(MNIST_WIDTH, MNIST_HEIGHT)
-                    
-                    # Normalize the weights to the [0, 255] range for proper image logging
-                    min_val, max_val = img_weights.min(), img_weights.max()
-                    if max_val > min_val: # Avoid division by zero if all weights are the same
-                        img_weights_normalized = PIXEL_NORMALIZATION_FACTOR * (img_weights - min_val) / (max_val - min_val)
-                    else:
-                        img_weights_normalized = np.zeros_like(img_weights)
-                    
-                    log_data["Parameters/Weights_Image"] = wandb.Image(img_weights_normalized)
-
-                wandb.log(log_data, step=i)
 
         self.logger.info("Fitting complete.")
 

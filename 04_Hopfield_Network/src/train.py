@@ -48,7 +48,7 @@ try:
     from .config import *
     from .data_loader import PatternGenerator, HopfieldDataLoader
     from .model import HopfieldNetwork
-    from .wandb_integration import WandbVisualizer, initialize_wandb, finish_wandb
+    from .wandb_integration import HopfieldWandbVisualizer, initialize_wandb, finish_wandb
     from .visualize import (
         plot_capacity_results, plot_noise_robustness, 
         plot_convergence_statistics, create_comprehensive_comparison,
@@ -60,7 +60,7 @@ except ImportError:
     from config import *
     from data_loader import PatternGenerator, HopfieldDataLoader
     from model import HopfieldNetwork
-    from wandb_integration import WandbVisualizer, initialize_wandb, finish_wandb
+    from wandb_integration import HopfieldWandbVisualizer, initialize_wandb, finish_wandb
     from visualize import (
         plot_capacity_results, plot_noise_robustness, 
         plot_convergence_statistics, create_comprehensive_comparison,
@@ -88,7 +88,7 @@ class HopfieldTrainer:
     """
     
     def __init__(self, network_size: int = NETWORK_SIZE, 
-                 wandb_visualizer: Optional[WandbVisualizer] = None):
+                 wandb_visualizer: Optional[HopfieldWandbVisualizer] = None):
         """
         Initialize the trainer.
         

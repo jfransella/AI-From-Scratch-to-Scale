@@ -59,7 +59,7 @@ _verify_virtual_environment()
 
 from src.config import WANDB_PROJECT_NAME, EXPERIMENTS
 from src.model import Perceptron
-from src.visualize import Visualizer
+from src.wandb_integration import PerceptronWandbVisualizer
 
 # --- Logging Setup ---
 def train(experiment: str, no_wandb: bool = False) -> None:
@@ -71,7 +71,7 @@ def train(experiment: str, no_wandb: bool = False) -> None:
     3.  Retrieves hyperparameters from the W&B config, which allows for sweeps.
     4.  Initializes and trains the Perceptron model.
     5.  Evaluates the model's final accuracy on the training data.
-    6.  Uses the `Visualizer` class to generate and log all relevant plots.
+    6.  Uses the `PerceptronWandbVisualizer` to generate and log all relevant plots.
     7.  Finishes the W&B run.
 
     Args:
@@ -108,8 +108,8 @@ def train(experiment: str, no_wandb: bool = False) -> None:
     else:
         logging.info(f"Weights & Biases run '{wandb.run.name}' initialized.")
 
-    # Initialize the visualizer
-    visualizer = Visualizer(wandb, enabled=(not no_wandb))
+    # Initialize the wandb visualizer
+    visualizer = PerceptronWandbVisualizer() if not no_wandb else None
 
     # Get hyperparameters from the W&B config.
     # These will be the defaults for a single run, or provided by the sweep agent.
@@ -140,14 +140,15 @@ def train(experiment: str, no_wandb: bool = False) -> None:
     wandb.summary["final_accuracy"] = accuracy
 
     # --- 4. Visualize ---
-    class_names = exp_config.get("class_names")
-    visualizer.log_all(
-        model=perceptron,
-        X=X,
-        y=y,
-        predictions=predictions,
-        class_names=class_names
-    )
+    if visualizer:
+        class_names = exp_config.get("class_names")
+        visualizer.log_training_results(
+            model=perceptron,
+            X=X,
+            y=y,
+            predictions=predictions,
+            class_names=class_names
+        )
 
     wandb.finish()
     logging.info(f"--- Experiment '{experiment}' Finished ---")

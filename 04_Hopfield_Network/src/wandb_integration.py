@@ -50,54 +50,94 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
-class WandbVisualizer:
-    """
-    Weights & Biases integration for Hopfield Network experiments.
+# Import the base W&B integration framework
+import sys
+import os
+try:
+    # Add the project root to Python path for shared imports
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
     
-    This class provides a seamless interface for logging experiments, metrics,
-    and visualizations to Weights & Biases while maintaining compatibility
-    with local-only execution when W&B is disabled.
+    from shared.utils.wandb_integration import BaseWandbVisualizer, initialize_wandb, finish_wandb
+    logger.info("Using shared W&B integration framework")
+except ImportError:
+    # Fall back for when shared module is not available
+    logger.warning("Shared W&B integration not found, using local implementation")
+    BaseWandbVisualizer = object  # Fallback to regular class
+    
+    # Define fallback functions
+    def initialize_wandb(*args, **kwargs):
+        return None, None
+    
+    def finish_wandb(*args, **kwargs):
+        pass
+
+
+class HopfieldWandbVisualizer(BaseWandbVisualizer):
+    """
+    Hopfield Network specific Weights & Biases integration.
+    
+    This class extends BaseWandbVisualizer to provide specialized logging
+    and visualization capabilities for Hopfield Network experiments.
     
     Educational Focus:
-    - Demonstrates professional ML experiment tracking
-    - Shows systematic hyperparameter exploration
-    - Enables easy comparison across experiments
-    - Provides interactive dashboards for learning
+    - Demonstrates inheritance in professional ML experiment tracking
+    - Shows model-specific experiment logging patterns
+    - Provides Hopfield-specific educational visualizations
+    - Enables systematic capacity and convergence analysis
     """
     
     def __init__(self, wandb_run: Optional[Any] = None, enabled: bool = True) -> None:
         """
-        Initialize the W&B visualizer.
+        Initialize the Hopfield W&B visualizer.
         
         Args:
             wandb_run: Active Weights & Biases run object
             enabled: Whether to enable W&B logging
-            
-        Raises:
-            ImportError: If wandb is not installed but enabled=True
-            ValueError: If wandb_run is None when enabled=True
         """
-        self.enabled = enabled and WANDB_AVAILABLE
-        self.wandb_run = wandb_run
-        
-        if enabled and not WANDB_AVAILABLE:
-            logger.warning(
-                "Weights & Biases not available. Install with: pip install wandb\n"
-                "Continuing with local logging only..."
-            )
-            self.enabled = False
-        
-        if self.enabled and wandb_run is None:
-            raise ValueError(
-                "wandb_run cannot be None when visualization is enabled. "
-                "Initialize wandb.init() first or set enabled=False"
-            )
+        # Initialize base class
+        super().__init__(wandb_run, enabled)
         
         if self.enabled:
-            logger.info("W&B visualizer initialized - experiment tracking enabled")
+            logger.info("Hopfield W&B visualizer initialized - experiment tracking enabled")
         else:
-            logger.info("W&B visualizer initialized - local logging only")
+            logger.info("Hopfield W&B visualizer initialized - local logging only")
+    
+    def log_model_config(self, config: Dict[str, Any]) -> None:
+        """
+        Log Hopfield network configuration (implements abstract method).
+        
+        Args:
+            config: Dictionary containing network configuration
+        """
+        # Extract Hopfield-specific configuration
+        network_size = config.get('network_size', 0)
+        stored_patterns = config.get('stored_patterns', 0)
+        theoretical_capacity = config.get('theoretical_capacity', int(0.15 * network_size))
+        
+        self.log_network_config(network_size, stored_patterns, theoretical_capacity, config)
+    
+    def log_training_progress(self, metrics: Dict[str, Any], step: int) -> None:
+        """
+        Log training progress metrics (implements abstract method).
+        
+        Args:
+            metrics: Training progress metrics
+            step: Current training step
+        """
+        # For Hopfield networks, training is one-shot, so we log storage completion
+        self.log_metrics(metrics, step=step)
+    
+    def create_model_visualizations(self, **kwargs) -> None:
+        """
+        Create model-specific visualizations (implements abstract method).
+        
+        Args:
+            **kwargs: Arguments for visualization creation
+        """
+        # This can be extended to create standard Hopfield visualizations
+        logger.info("Creating Hopfield network visualizations...")
     
     def log_network_config(self, network_size: int, stored_patterns: int, 
                           theoretical_capacity: int, config: Dict[str, Any]) -> None:
@@ -798,7 +838,7 @@ class WandbVisualizer:
 def initialize_wandb(project_name: str = WANDB_PROJECT_NAME,
                     entity: Optional[str] = WANDB_ENTITY,
                     config: Optional[Dict[str, Any]] = None,
-                    enabled: bool = True) -> Tuple[Any, WandbVisualizer]:
+                    enabled: bool = True) -> Tuple[Any, HopfieldWandbVisualizer]:
     """
     Initialize Weights & Biases run and visualizer.
     
@@ -813,7 +853,7 @@ def initialize_wandb(project_name: str = WANDB_PROJECT_NAME,
     """
     if not enabled or not WANDB_AVAILABLE:
         logger.info("W&B integration disabled")
-        return None, WandbVisualizer(enabled=False)
+        return None, HopfieldWandbVisualizer(enabled=False)
     
     # Initialize W&B run
     wandb_run = wandb.init(
@@ -824,7 +864,7 @@ def initialize_wandb(project_name: str = WANDB_PROJECT_NAME,
     )
     
     # Create visualizer
-    visualizer = WandbVisualizer(wandb_run, enabled=True)
+    visualizer = HopfieldWandbVisualizer(wandb_run, enabled=True)
     
     logger.info(f"W&B run initialized: {wandb_run.name}")
     return wandb_run, visualizer
