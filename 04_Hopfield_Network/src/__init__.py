@@ -22,18 +22,18 @@ Example:
 """
 
 from .model import HopfieldNetwork
-from .wandb_integration import HopfieldWandbVisualizer
+# from .wandb_integration import HopfieldWandbVisualizer  # Temporarily disabled - WandB integration pending
 
 # Core visualization functions - public API
 from .visualize import (
     display_pattern,
-    visualize_pattern,
     visualize_pattern_set,
     visualize_energy_landscape,
     visualize_convergence,
     plot_capacity_results,
     plot_noise_robustness,
-    plot_convergence_statistics
+    plot_convergence_statistics,
+    HopfieldVisualizer
 )
 
 __all__ = [
@@ -41,7 +41,7 @@ __all__ = [
     'HopfieldNetwork',
     
     # Experiment tracking
-    'HopfieldWandbVisualizer',
+    # 'HopfieldWandbVisualizer',  # Temporarily disabled - WandB integration pending
     
     # Visualization functions
     'display_pattern',

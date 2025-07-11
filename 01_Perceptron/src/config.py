@@ -20,6 +20,9 @@ except ImportError:
 # --- W&B Config ---
 WANDB_PROJECT_NAME = "perceptron-from-scratch"
 
+# --- Directory Constants ---
+PLOTS_DIR: str = "outputs/plots"
+
 # --- Experiment Registry ---
 # Central place to define all parameters for each experiment.
 # This makes adding new experiments much cleaner.
