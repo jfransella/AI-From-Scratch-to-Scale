@@ -1,5 +1,7 @@
 # Python Coding Guidelines for AI-From-Scratch-to-Scale
 
+These instructions apply to all AI coding assistants and human contributors.
+
 ## Project Context & Learning Objectives
 
 This repository implements fundamental AI/ML algorithms from scratch to provide deep understanding of core concepts. The project follows a progressive learning path from basic perceptrons to advanced transformers and generative models.
