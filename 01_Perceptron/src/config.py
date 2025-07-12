@@ -8,8 +8,7 @@ parameters without changing the core logic of the application.
 
 """
 
-from typing import Dict, Any, Callable, Tuple, List
-import numpy as np
+from typing import Dict, Any
 
 # Handle both relative and absolute imports
 try:

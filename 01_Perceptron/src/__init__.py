@@ -27,21 +27,18 @@ from .config import EXPERIMENTS, WANDB_PROJECT_NAME
 # Visualization functions - public API
 from .visualize import (
     plot_confusion_matrix,
-    plot_learning_curve, 
+    plot_learning_curve,
     plot_decision_boundary
 )
 
 __all__ = [
     # Core model
-    'Perceptron',
-    
+    'Perceptron',    
     # Experiment tracking
-    'PerceptronWandbVisualizer',
-    
+    'PerceptronWandbVisualizer',    
     # Configuration
     'EXPERIMENTS',
-    'WANDB_PROJECT_NAME',
-    
+    'WANDB_PROJECT_NAME',    
     # Visualization functions
     'plot_confusion_matrix',
     'plot_learning_curve',

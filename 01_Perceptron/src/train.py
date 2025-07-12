@@ -21,9 +21,10 @@ import sys
 import argparse
 import logging
 from datetime import datetime
-from typing import Optional
-import numpy as np
 import wandb
+from .config import WANDB_PROJECT_NAME, EXPERIMENTS
+from .model import Perceptron
+from .wandb_integration import PerceptronWandbVisualizer
 
 # --- Environment Verification ---
 def _verify_virtual_environment() -> None:
@@ -51,21 +52,17 @@ def _verify_virtual_environment() -> None:
             f"  Expected Interpreter: {expected_path}",
             file=sys.stderr,
         )
-        activation_cmd = ".\\.venv\\Scripts\\activate" if sys.platform == "win32" else "source .venv/bin/activate"
+        activation_cmd = (
+            ".\\.venv\\Scripts\\activate" if sys.platform == "win32" 
+            else "source .venv/bin/activate"
+        )
         print(f"\nPlease activate the virtual environment: `{activation_cmd}`", file=sys.stderr)
         sys.exit(1)
 
 _verify_virtual_environment()
 
 # Add src directory to Python path for imports
-import sys
-import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-
-from config import WANDB_PROJECT_NAME, EXPERIMENTS
-from model import Perceptron
-from wandb_integration import PerceptronWandbVisualizer
-
 # --- Logging Setup ---
 def train(experiment: str, no_wandb: bool = False) -> None:
     """Orchestrates a single training and evaluation run for a given experiment.
@@ -84,17 +81,23 @@ def train(experiment: str, no_wandb: bool = False) -> None:
                    Must be a key in the `EXPERIMENTS` dictionary in `config.py`.
         no_wandb: If True, disables all Weights & Biases logging.
     """
-    logging.info(f"--- Starting Perceptron Training: '{experiment}' experiment ---")
+    logging.info("--- Starting Perceptron Training: '%s' experiment ---", experiment)
 
     # --- 1. Prepare Experiment ---
     if experiment not in EXPERIMENTS:
-        logging.error(f"Unknown experiment: {experiment}. Check config.py for available experiments.")
+        logging.error(
+            "Unknown experiment: %s. Check config.py for available experiments.", 
+            experiment
+        )
         return
 
     exp_config = EXPERIMENTS[experiment]
-    logging.info(f"Loading data for '{experiment}' experiment...")
-    X, y = exp_config["data_loader"]()
-    logging.info(f"Data loaded successfully. Found {X.shape[0]} samples with {X.shape[1]} features.")
+    logging.info("Loading data for '%s' experiment...", experiment)
+    features, y = exp_config["data_loader"]()
+    logging.info(
+        "Data loaded successfully. Found %d samples with %d features.",
+        features.shape[0], features.shape[1]
+    )
 
     # --- Setup W&B ---
     wandb_mode = "disabled" if no_wandb else "online"
@@ -111,7 +114,8 @@ def train(experiment: str, no_wandb: bool = False) -> None:
     if no_wandb:
         logging.info("Weights & Biases logging is disabled for this run.")
     else:
-        logging.info(f"Weights & Biases run '{wandb.run.name}' initialized.")
+        assert wandb.run is not None  # type: ignore
+        logging.info("Weights & Biases run '%s' initialized.", wandb.run.name)
 
     # Initialize the wandb visualizer
     visualizer = PerceptronWandbVisualizer(wandb.run) if not no_wandb else None
@@ -125,20 +129,21 @@ def train(experiment: str, no_wandb: bool = False) -> None:
     if not no_wandb:
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         run_name = f"{experiment}-{timestamp}-lr_{lr:.5f}-ep_{epochs}"
+        assert wandb.run is not None  # type: ignore
         wandb.run.name = run_name
-        logging.info(f"W&B run name updated to: {run_name}")
+        logging.info("W&B run name updated to: %s", run_name)
 
     # --- 2. Initialize and train the model ---
-    logging.info(f"Initializing Perceptron with LR={lr} and Epochs={epochs}.")
-    perceptron = Perceptron(learning_rate=lr, n_iters=epochs, logger=logging)
-    perceptron.fit(X, y)
+    logging.info("Initializing Perceptron with LR=%f and Epochs=%d.", lr, epochs)
+    perceptron = Perceptron(learning_rate=lr, n_iters=epochs, logger=logging.getLogger())
+    perceptron.fit(features, y)
     logging.info("Training complete.")
 
     # --- 3. Evaluate ---
-    predictions = perceptron.predict(X)
+    predictions = perceptron.predict(features)
     # Assuming y from data loader is already 0s and 1s
     accuracy = (predictions == y).mean()
-    logging.info(f"Final training accuracy: {accuracy:.4f}")
+    logging.info("Final training accuracy: %.4f", accuracy)
 
     # Log final accuracy to W&B summary for easy comparison
     wandb.summary["final_accuracy"] = accuracy
@@ -148,14 +153,14 @@ def train(experiment: str, no_wandb: bool = False) -> None:
         class_names = exp_config.get("class_names")
         visualizer.log_training_results(
             model=perceptron,
-            X=X,
+            X=features,
             y=y,
             predictions=predictions,
             class_names=class_names
         )
 
     wandb.finish()
-    logging.info(f"--- Experiment '{experiment}' Finished ---")
+    logging.info("--- Experiment '%s' Finished ---", experiment)
 
 
 def main():
@@ -182,7 +187,7 @@ def main():
         type=str,
         default='and',
         choices=list(EXPERIMENTS.keys()),
-        help=f"The experiment to run. Choices: {list(EXPERIMENTS.keys())}"
+        help="The experiment to run. Choices: %s" % list(EXPERIMENTS.keys())
     )
     parser.add_argument(
         '--no-wandb',
@@ -191,7 +196,7 @@ def main():
     )
     args, unknown = parser.parse_known_args()
     if unknown:
-        logging.warning(f"Unrecognized arguments will be ignored: {unknown}")
+        logging.warning("Unrecognized arguments will be ignored: %s", unknown)
     train(args.experiment, no_wandb=args.no_wandb)
 
 if __name__ == "__main__":

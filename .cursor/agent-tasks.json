@@ -1,0 +1,224 @@
+{
+  "version": "2.0.0",
+  "agentTasks": [
+    {
+      "name": "Enhanced W&B Integration Patterns",
+      "description": "Add log_figure_with_metadata() method to BaseWandbVisualizer",
+      "status": "not-started",
+      "priority": "high",
+      "estimatedTime": "1-2 weeks",
+      "agentInstructions": "Implement enhanced W&B integration with automatic caption generation, metadata extraction, and robust error handling",
+      "subtasks": [
+        {
+          "name": "Implement automatic caption generation based on plot type",
+          "description": "Create caption templates for common plot types and model-specific logic",
+          "status": "not-started",
+          "agentInstructions": "Create a caption generation system that automatically generates descriptive captions based on plot type and model information",
+          "subtasks": [
+            {
+              "name": "Create caption templates for common plot types",
+              "description": "Training curves, decision boundaries, weight evolution, etc.",
+              "agentInstructions": "Define template strings for different plot types with placeholders for dynamic content"
+            },
+            {
+              "name": "Add model-specific caption generation logic",
+              "description": "ADALINE, Perceptron, MLP, Hopfield Network specific captions",
+              "agentInstructions": "Implement logic to detect model type and generate appropriate captions"
+            },
+            {
+              "name": "Include dataset information in captions",
+              "description": "Dataset size, features, classes, etc.",
+              "agentInstructions": "Extract and include dataset metadata in captions"
+            },
+            {
+              "name": "Add timestamp and experiment context to captions",
+              "description": "Run name, timestamp, experiment type",
+              "agentInstructions": "Include experiment context and timing information in captions"
+            },
+            {
+              "name": "Test caption generation with different plot types",
+              "description": "Unit tests for various plot scenarios",
+              "agentInstructions": "Create comprehensive tests for caption generation functionality"
+            }
+          ]
+        },
+        {
+          "name": "Add metadata extraction (model type, dataset, hyperparameters)",
+          "description": "Extract comprehensive metadata from model objects and configurations",
+          "status": "not-started",
+          "agentInstructions": "Implement metadata extraction that can handle different model types and extract relevant information",
+          "subtasks": [
+            {
+              "name": "Extract model type from model object or configuration",
+              "description": "Detect ADALINE, Perceptron, MLP, etc.",
+              "agentInstructions": "Implement model type detection logic that works with different model architectures"
+            },
+            {
+              "name": "Extract dataset information (size, features, classes)",
+              "description": "Dataset dimensions, feature count, class distribution",
+              "agentInstructions": "Extract dataset metadata including dimensions and characteristics"
+            },
+            {
+              "name": "Extract hyperparameters (learning rate, epochs, etc.)",
+              "description": "Learning rate, max epochs, convergence threshold, etc.",
+              "agentInstructions": "Extract training hyperparameters from model configuration"
+            },
+            {
+              "name": "Add experiment run information (run name, timestamp)",
+              "description": "W&B run details and timing information",
+              "agentInstructions": "Include W&B run metadata in the extracted information"
+            },
+            {
+              "name": "Include model performance metrics in metadata",
+              "description": "Accuracy, loss, convergence epoch, etc.",
+              "agentInstructions": "Extract performance metrics from model state"
+            },
+            {
+              "name": "Create metadata validation and sanitization",
+              "description": "Ensure metadata is clean and valid for W&B",
+              "agentInstructions": "Implement validation and sanitization for metadata before logging"
+            }
+          ]
+        },
+        {
+          "name": "Create consistent error handling and cleanup",
+          "description": "Implement robust error handling and resource management",
+          "status": "not-started",
+          "agentInstructions": "Implement comprehensive error handling that gracefully handles W&B failures and manages resources properly",
+          "subtasks": [
+            {
+              "name": "Add try-catch blocks for W&B logging operations",
+              "description": "Handle W&B API errors gracefully",
+              "agentInstructions": "Wrap W&B operations in try-catch blocks with appropriate error handling"
+            },
+            {
+              "name": "Implement graceful fallback when W&B is unavailable",
+              "description": "Continue with local logging when W&B is disabled",
+              "agentInstructions": "Implement fallback logging when W&B is not available"
+            },
+            {
+              "name": "Add proper figure cleanup after logging",
+              "description": "Prevent memory leaks from unclosed figures",
+              "agentInstructions": "Ensure figures are properly closed after logging to prevent memory leaks"
+            },
+            {
+              "name": "Handle memory management for large figures",
+              "description": "Optimize memory usage for complex visualizations",
+              "agentInstructions": "Implement memory optimization for large and complex figures"
+            },
+            {
+              "name": "Add logging for successful and failed operations",
+              "description": "Comprehensive logging for debugging and monitoring",
+              "agentInstructions": "Add detailed logging for both successful and failed operations"
+            },
+            {
+              "name": "Create error recovery mechanisms",
+              "description": "Retry logic and alternative logging methods",
+              "agentInstructions": "Implement retry logic and alternative logging methods for error recovery"
+            }
+          ]
+        },
+        {
+          "name": "Support for both single figures and figure collections",
+          "description": "Handle various figure types and formats",
+          "status": "not-started",
+          "agentInstructions": "Implement support for both individual figures and collections of figures with proper organization",
+          "subtasks": [
+            {
+              "name": "Implement single figure logging with metadata",
+              "description": "Basic figure logging with comprehensive metadata",
+              "agentInstructions": "Implement basic figure logging with full metadata support"
+            },
+            {
+              "name": "Add support for figure collections (subplots, multi-panel plots)",
+              "description": "Handle complex multi-panel visualizations",
+              "agentInstructions": "Implement support for multi-panel figures and subplot collections"
+            },
+            {
+              "name": "Create batch logging for multiple figures",
+              "description": "Efficient logging of multiple figures at once",
+              "agentInstructions": "Implement efficient batch logging for multiple figures"
+            },
+            {
+              "name": "Add figure grouping and organization",
+              "description": "Logical grouping of related visualizations",
+              "agentInstructions": "Implement logical grouping and organization of related figures"
+            },
+            {
+              "name": "Implement figure naming conventions",
+              "description": "Consistent naming for W&B organization",
+              "agentInstructions": "Create consistent naming conventions for W&B organization"
+            },
+            {
+              "name": "Add support for different figure formats (PNG, PDF, SVG)",
+              "description": "Flexible output format support",
+              "agentInstructions": "Implement support for multiple figure formats"
+            }
+          ]
+        },
+        {
+          "name": "Add unit tests for the new method",
+          "description": "Comprehensive testing of the new W&B integration method",
+          "status": "not-started",
+          "agentInstructions": "Create comprehensive unit tests that cover all aspects of the new W&B integration method",
+          "subtasks": [
+            {
+              "name": "Test caption generation with various plot types",
+              "description": "Unit tests for different plot scenarios",
+              "agentInstructions": "Create unit tests for caption generation with different plot types"
+            },
+            {
+              "name": "Test metadata extraction with different model types",
+              "description": "Test with ADALINE, Perceptron, MLP, Hopfield models",
+              "agentInstructions": "Test metadata extraction with various model architectures"
+            },
+            {
+              "name": "Test error handling scenarios",
+              "description": "Test W&B unavailability, network errors, etc.",
+              "agentInstructions": "Create tests for various error scenarios and edge cases"
+            },
+            {
+              "name": "Test figure collection logging",
+              "description": "Test multi-panel and batch figure logging",
+              "agentInstructions": "Test logging of figure collections and multi-panel figures"
+            },
+            {
+              "name": "Test W&B integration with mock objects",
+              "description": "Mock W&B API for testing without real runs",
+              "agentInstructions": "Create mock W&B objects for testing without requiring real W&B runs"
+            },
+            {
+              "name": "Add integration tests with real W&B runs",
+              "description": "End-to-end testing with actual W&B integration",
+              "agentInstructions": "Create integration tests that use real W&B runs for end-to-end testing"
+            }
+          ]
+        }
+      ],
+      "files": [
+        "ai_from_scratch_shared/ai_from_scratch_shared/wandb_integration.py"
+      ],
+      "tags": [
+        "wandb",
+        "visualization",
+        "integration",
+        "metadata",
+        "logging"
+      ],
+      "notes": [
+        "Maintain backward compatibility with existing W&B logging methods",
+        "Optimize performance for large figures and frequent logging",
+        "Ensure robust error handling and informative error messages",
+        "Make the method flexible enough to handle various model types and plot styles"
+      ],
+      "dependencies": [],
+      "assignedAgent": "claude-3.5-sonnet",
+      "agentCapabilities": [
+        "code-generation",
+        "testing",
+        "documentation",
+        "refactoring"
+      ]
+    }
+  ]
+} 
