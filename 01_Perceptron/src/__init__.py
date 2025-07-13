@@ -14,22 +14,20 @@ The implementation focuses on educational clarity, showing the mathematical
 foundations of neural learning without framework abstractions.
 
 Example:
-    >>> from src import Perceptron, PerceptronWandbVisualizer
+    >>> from src import Perceptron, PerceptronWandbVisualizer, PerceptronVisualizer
     >>> model = Perceptron(learning_rate=0.01, n_iters=100)
     >>> model.fit(X_train, y_train)
     >>> predictions = model.predict(X_test)
+    >>> visualizer = PerceptronVisualizer()
+    >>> visualizer.generate_all_visualizations(model, X_train, y_train, predictions)
 """
 
 from .model import Perceptron
 from .wandb_integration import PerceptronWandbVisualizer
 from .config import EXPERIMENTS, WANDB_PROJECT_NAME
 
-# Visualization functions - public API
-from .visualize import (
-    plot_confusion_matrix,
-    plot_learning_curve,
-    plot_decision_boundary
-)
+# Visualization class - public API
+from .visualize import PerceptronVisualizer
 
 __all__ = [
     # Core model
@@ -39,10 +37,8 @@ __all__ = [
     # Configuration
     'EXPERIMENTS',
     'WANDB_PROJECT_NAME',    
-    # Visualization functions
-    'plot_confusion_matrix',
-    'plot_learning_curve',
-    'plot_decision_boundary',
+    # Visualization class
+    'PerceptronVisualizer',
 ]
 
 __version__ = "1.0.0"

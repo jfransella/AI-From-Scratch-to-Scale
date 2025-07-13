@@ -1,0 +1,45 @@
+# Test Environment Requirements for AI-From-Scratch-to-Scale Visualization Framework
+# =============================================================================
+# 
+# This file contains all dependencies needed to run the comprehensive
+# visualization framework test suite.
+#
+# Core Dependencies
+# ================
+matplotlib>=3.5.0
+numpy>=1.21.0
+seaborn>=0.11.0
+pandas>=1.2.0
+
+# Machine Learning Dependencies
+# ============================
+scikit-learn>=1.0.0
+
+# Performance Monitoring
+# ====================
+psutil>=5.8.0
+
+# Weights & Biases Integration
+# ===========================
+wandb>=0.16.0
+
+# Development and Testing
+# ======================
+pytest>=6.0.0
+pytest-cov>=2.10.0
+
+# Optional: For enhanced testing capabilities
+# =========================================
+# pytest-mock>=3.6.0
+# pytest-xdist>=2.4.0  # For parallel test execution
+
+# Version Pinning for Stability
+# ============================
+# Uncomment the lines below to pin specific versions for maximum stability
+# matplotlib==3.10.3
+# numpy==2.3.1
+# seaborn==0.13.2
+# pandas==2.3.1
+# scikit-learn==1.5.0
+# psutil==7.0.0
+# wandb==0.21.0 

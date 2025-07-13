@@ -54,49 +54,39 @@ class ConfusionMatrixVisualizer(BaseVisualizer):
              show_statistics: bool = True,
              title: str = "Confusion Matrix",
              save_path: Optional[Union[str, Path]] = None,
-             show: bool = True) -> Tuple[plt.Figure, plt.Axes]:
+             show: bool = True,
+             xlabel: str = "Predicted Label",
+             ylabel: str = "True Label") -> Tuple[plt.Figure, plt.Axes]:
         """
-        Create an educational confusion matrix visualization.
-        
-        Args:
-            y_true: True labels
-            y_pred: Predicted labels
-            class_names: Names for classes (if None, uses numeric labels)
-            show_percentages: Whether to show percentages in addition to counts
-            show_statistics: Whether to add statistical annotations
-            title: Plot title
-            save_path: Path to save figure
-            show: Whether to display figure
-            
-        Returns:
-            Tuple of (figure, axes)
+        Minimalist confusion matrix visualization: heatmap, axis labels, class names, colorbar, and a single small annotation.
         """
-        from sklearn.metrics import confusion_matrix, classification_report
-        
+        from sklearn.metrics import confusion_matrix
+        import seaborn as sns
+        import numpy as np
+
         # Compute confusion matrix
         cm = confusion_matrix(y_true, y_pred)
         n_classes = cm.shape[0]
-        
+
         # Generate class names if not provided
         if class_names is None:
             class_names = [f"Class {i}" for i in range(n_classes)]
-        
+
         # Create figure
         fig, ax = self.create_figure(figsize='confusion_matrix')
-        
+
         # Create heatmap
         if show_percentages:
-            # Show both counts and percentages
             cm_percent = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
             annotations = np.array([
-                [f"{count}\n({percent:.1f}%)" 
+                [f"{count}\n({percent:.1f}%)"
                  for count, percent in zip(cm_row, percent_row)]
                 for cm_row, percent_row in zip(cm, cm_percent)
             ])
         else:
             annotations = cm
-        
-        # Create heatmap with educational colors
+
+        # Create heatmap with colorbar
         sns.heatmap(
             cm,
             annot=annotations,
@@ -106,29 +96,24 @@ class ConfusionMatrixVisualizer(BaseVisualizer):
             yticklabels=class_names,
             ax=ax,
             cbar_kws={'label': 'Number of Predictions'},
-            square=True
+            square=True,
+            annot_kws={"fontsize": 16, "fontweight": "bold"}
         )
-        
+
         # Styling
         self.apply_consistent_styling(
-            ax, title, "Predicted Label", "True Label"
+            ax, title, xlabel, ylabel
         )
-        
-        # Add educational annotations
-        if show_statistics:
-            self._add_statistics_annotation(cm, ax, y_true, y_pred)
-        
-        # Add educational context
-        self.add_educational_annotation(
-            ax,
-            "Diagonal cells show correct predictions.\n"
-            "Off-diagonal cells show classification errors.",
-            position="bottom_right"
-        )
-        
+
+        # Minimal educational annotation (optional, small)
+        # self.add_educational_annotation(
+        #     ax,
+        #     "Diagonal cells show correct predictions. Off-diagonal cells show classification errors.",
+        #     position="bottom_right"
+        # )
+
         # Save and show
         self.save_and_show(fig, save_path=save_path, show=show)
-        
         return fig, ax
     
     def _add_statistics_annotation(self,

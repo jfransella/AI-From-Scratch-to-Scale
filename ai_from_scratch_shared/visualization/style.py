@@ -117,6 +117,23 @@ FONT_SIZES = {
     'small_text': 8,
 }
 
+# Add EDUCATIONAL_STYLE after FONT_SIZES
+EDUCATIONAL_STYLE = {
+    'figure.facecolor': 'white',
+    'axes.facecolor': 'white',
+    'axes.edgecolor': EDUCATIONAL_COLORS['text_dark'],
+    'axes.grid': True,
+    'grid.color': EDUCATIONAL_COLORS['neutral_light'],
+    'font.family': 'sans-serif',
+    'font.size': FONT_SIZES['axis_label'],
+    'axes.titlesize': FONT_SIZES['title'],
+    'axes.labelsize': FONT_SIZES['axis_label'],
+    'xtick.labelsize': FONT_SIZES['tick_label'],
+    'ytick.labelsize': FONT_SIZES['tick_label'],
+    'legend.fontsize': FONT_SIZES['legend'],
+    'text.color': EDUCATIONAL_COLORS['text_dark'],
+}
+
 # Line and marker specifications
 LINE_STYLES = {
     'solid': '-',

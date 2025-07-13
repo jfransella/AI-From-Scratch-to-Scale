@@ -156,7 +156,8 @@ def train(experiment: str, no_wandb: bool = False) -> None:
             X=features,
             y=y,
             predictions=predictions,
-            class_names=class_names
+            class_names=class_names,
+            experiment_name=experiment
         )
 
     wandb.finish()

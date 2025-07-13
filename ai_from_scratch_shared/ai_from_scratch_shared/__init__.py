@@ -1,32 +1,41 @@
 """
-AI From Scratch Shared Utilities
+AI From Scratch to Scale - Shared Utilities
+==========================================
 
-Provides standardized W&B integration patterns and common utilities
-for the AI-From-Scratch-to-Scale educational project.
+This package provides shared utilities for the AI-From-Scratch-to-Scale project,
+including visualization frameworks, W&B integration, and common components.
 
-This package contains:
-- BaseWandbVisualizer: Abstract base class for model-specific W&B integration
-- Utility functions for W&B initialization and cleanup
-- Common patterns for experiment tracking across all models
-- Visualization framework: Standardized visualization components and styling
-
-Example:
-    >>> from ai_from_scratch_shared import BaseWandbVisualizer
-    >>> from ai_from_scratch_shared.visualization import BaseVisualizer
-    >>> class MyModelVisualizer(BaseVisualizer):
-    ...     def plot_model_specific_data(self, data):
-    ...         # Implementation here
-    ...         pass
+Key Components:
+- BaseVisualizer: Unified visualization interface
+- PlotFactory: Standardized plot creation
+- BaseWandbVisualizer: W&B integration base class
+- InteractiveVisualizer: Real-time interactive plots
+- AdvancedVisualizer: Advanced visualization types
 """
 
-from .wandb_integration import BaseWandbVisualizer, initialize_wandb, finish_wandb
-# Note: visualization module is imported separately due to its size
+# Import visualization framework
+from .visualization import (
+    BaseVisualizer,
+    PlotFactory,
+    InteractiveVisualizer,
+    AdvancedVisualizer
+)
+
+# Import W&B integration
+from .wandb_integration import BaseWandbVisualizer
+
+# Import utility functions
+from .wandb_integration import initialize_wandb, finish_wandb
 
 __version__ = "1.0.0"
-__author__ = "AI-From-Scratch-to-Scale Project"
+__author__ = "AI-From-Scratch-to-Scale Team"
 
 __all__ = [
+    "BaseVisualizer",
+    "PlotFactory", 
+    "InteractiveVisualizer",
+    "AdvancedVisualizer",
     "BaseWandbVisualizer",
-    "initialize_wandb", 
-    "finish_wandb",
-]
+    "initialize_wandb",
+    "finish_wandb"
+] 

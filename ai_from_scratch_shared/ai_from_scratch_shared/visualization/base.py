@@ -37,6 +37,15 @@ from .style import (
     EDUCATIONAL_COLORS
 )
 from .utils import save_and_show_plot, format_axes_for_education
+from .validation import VisualizationValidator, ValidationError
+from .performance import (
+    PerformanceMonitor, 
+    FigureCache, 
+    LazyPlotCreator, 
+    MemoryManager,
+    performance_monitor,
+    lazy_plot_creation
+)
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +100,99 @@ class BaseVisualizer:
         # Track created figures for cleanup
         self._figures = []
         
+        # Initialize performance optimization components
+        self.performance_monitor = PerformanceMonitor()
+        self.figure_cache = FigureCache()
+        self.lazy_creator = LazyPlotCreator(self.figure_cache)
+        self.memory_manager = MemoryManager()
+        
         logger.debug(f"Initialized {model_name}Visualizer with {style_theme} theme")
+    
+    def validate_inputs(self, **kwargs) -> None:
+        """
+        Validate common input parameters with detailed error messages.
+        
+        Args:
+            **kwargs: Input parameters to validate
+            
+        Raises:
+            ValidationError: If inputs are invalid
+        """
+        validator = VisualizationValidator()
+        
+        # Validate model_name
+        if 'model_name' in kwargs:
+            model_name = kwargs['model_name']
+            if not isinstance(model_name, str):
+                raise ValidationError(
+                    f"model_name must be a string, got {type(model_name)}",
+                    [
+                        "Use descriptive string for model name",
+                        "Example: model_name='Perceptron'"
+                    ]
+                )
+            if len(model_name.strip()) == 0:
+                raise ValidationError(
+                    "model_name cannot be empty",
+                    [
+                        "Provide meaningful model name",
+                        "Use descriptive name like 'Perceptron' or 'MLP'"
+                    ]
+                )
+        
+        # Validate style_theme
+        if 'style_theme' in kwargs:
+            theme = kwargs['style_theme']
+            valid_themes = ['educational', 'professional']
+            if theme not in valid_themes:
+                raise ValidationError(
+                    f"style_theme must be one of {valid_themes}, got '{theme}'",
+                    [
+                        f"Use one of: {', '.join(valid_themes)}",
+                        "Default is 'educational' for learning-focused plots"
+                    ]
+                )
+    
+    def validate_data_for_visualization(self, 
+                                      features: np.ndarray,
+                                      labels: np.ndarray,
+                                      model: Any = None) -> None:
+        """
+        Validate data inputs for visualization methods.
+        
+        Args:
+            features: Input features
+            labels: Target labels
+            model: Model object (optional)
+            
+        Raises:
+            ValidationError: If data is invalid for visualization
+        """
+        validator = VisualizationValidator()
+        
+        # Validate features
+        if features is not None:
+            validator.validate_2d_features(features, "features")
+        
+        # Validate labels
+        if labels is not None:
+            validator.validate_labels(labels, data_name="labels")
+        
+        # Validate model if provided
+        if model is not None:
+            validator.validate_model_interface(model)
+        
+        # Validate matching lengths
+        if features is not None and labels is not None:
+            if len(features) != len(labels):
+                raise ValidationError(
+                    f"Features and labels must have same length: {len(features)} vs {len(labels)}",
+                    [
+                        "Check data loading and preprocessing",
+                        "Ensure features and labels are aligned",
+                        "Verify data splitting and shuffling"
+                    ]
+                )
     
     def create_figure(self, 
                      figsize: Union[Tuple[int, int], str] = 'default',
@@ -184,6 +285,77 @@ class BaseVisualizer:
             close_after=close_after,
             **kwargs
         )
+    
+    @performance_monitor
+    def create_figure_optimized(self, 
+                               figsize: Union[Tuple[int, int], str] = 'default',
+                               subplots: Tuple[int, int] = (1, 1),
+                               enable_caching: bool = True,
+                               **kwargs) -> Tuple[Figure.Figure, Union[Axes, np.ndarray]]:
+        """
+        Create a figure with performance optimizations.
+        
+        Args:
+            figsize: Figure size as tuple or preset name
+            subplots: Number of subplots as (rows, cols)
+            enable_caching: Whether to enable figure caching
+            **kwargs: Additional arguments passed to plt.subplots()
+            
+        Returns:
+            Tuple of (figure, axes) with performance monitoring
+        """
+        # Check memory usage and cleanup if needed
+        if self.memory_manager.should_cleanup():
+            self.memory_manager.cleanup_memory()
+        
+        # Create figure with standard method
+        fig, axes = self.create_figure(figsize, subplots, **kwargs)
+        
+        # Cache the figure if enabled
+        if enable_caching:
+            # Generate cache key based on parameters
+            cache_key = f"{figsize}_{subplots}_{hash(str(kwargs))}"
+            self.figure_cache.put("figure", cache_key, fig)
+        
+        return fig, axes
+    
+    def get_performance_report(self) -> Dict[str, Any]:
+        """Get comprehensive performance report."""
+        return {
+            "visualizer_performance": self.performance_monitor.get_performance_report(),
+            "cache_stats": self.figure_cache.get_stats(),
+            "memory_usage": self.memory_manager.check_memory_usage(),
+            "optimization_recommendations": self._get_optimization_recommendations()
+        }
+    
+    def _get_optimization_recommendations(self) -> List[str]:
+        """Get performance optimization recommendations."""
+        recommendations = []
+        
+        # Check memory usage
+        memory_info = self.memory_manager.check_memory_usage()
+        if memory_info["usage_percent"] > 80:
+            recommendations.append("High memory usage - consider enabling aggressive cleanup")
+        
+        # Check cache performance
+        cache_stats = self.figure_cache.get_stats()
+        if cache_stats["memory_usage_percent"] > 80:
+            recommendations.append("Cache memory usage high - consider reducing cache size")
+        
+        # Check performance metrics
+        perf_report = self.performance_monitor.get_performance_report()
+        if "average_creation_time" in perf_report and perf_report["average_creation_time"] > 1.0:
+            recommendations.append("Slow plot creation - consider using lazy plot creation")
+        
+        return recommendations
+    
+    def optimize_for_data_size(self, data_size: int) -> Dict[str, Any]:
+        """Optimize settings for specific data size."""
+        return self.memory_manager.optimize_for_data_size(data_size)
+    
+    def cleanup_memory(self, aggressive: bool = False) -> Dict[str, Any]:
+        """Clean up memory with optional aggressive cleanup."""
+        return self.memory_manager.cleanup_memory(aggressive)
     
     def add_educational_annotation(self, 
                                   ax: Axes,

@@ -28,6 +28,7 @@ Example Usage:
 """
 
 from .base import BaseVisualizer
+from .plot_factory import PlotFactory
 from .common import (
     ConfusionMatrixVisualizer,
     TrainingCurveVisualizer,
@@ -54,6 +55,21 @@ from .educational import (
     create_concept_explanation
 )
 
+# Phase 2: Advanced Visualization Features
+from .interactive import (
+    InteractiveVisualizer,
+    InteractionType,
+    InteractiveElement,
+    create_interactive_demo
+)
+
+from .advanced import (
+    AdvancedVisualizer,
+    PlotType,
+    LayerInfo,
+    create_advanced_demo
+)
+
 __version__ = "1.0.0"
 __author__ = "AI-From-Scratch-to-Scale Project"
 
@@ -61,11 +77,22 @@ __author__ = "AI-From-Scratch-to-Scale Project"
 __all__ = [
     # Core classes
     "BaseVisualizer",
+    "PlotFactory",
     "ConfusionMatrixVisualizer", 
     "TrainingCurveVisualizer",
     "DecisionBoundaryVisualizer",
     "DataDistributionVisualizer",
     "EducationalAnnotator",
+    
+    # Phase 2: Advanced Visualization Features
+    "InteractiveVisualizer",
+    "InteractionType",
+    "InteractiveElement",
+    "create_interactive_demo",
+    "AdvancedVisualizer",
+    "PlotType",
+    "LayerInfo",
+    "create_advanced_demo",
     
     # Styling and themes
     "EDUCATIONAL_COLORS",

@@ -10,6 +10,7 @@ efficient numerical operations.
 import logging
 from typing import Optional, List
 import numpy as np
+import time
 
 # Handle both relative and absolute imports
 try:
@@ -76,6 +77,9 @@ class Perceptron:
         self.errors_per_epoch: List[int] = []
         self.logger = logger
         self.random_seed = random_seed
+        self.weights_history: List[np.ndarray] = []  # Store weights per epoch
+        self.bias_history: List[float] = []  # Store bias per epoch
+        self.accuracy_history: List[float] = []  # Store accuracy per epoch
 
         # Set random seed for reproducibility
         if self.random_seed is not None:
@@ -130,11 +134,16 @@ class Perceptron:
         self.weights = np.random.rand(n_features).astype(np.float32) * 0.01
         self.bias = 0.0
         self.errors_per_epoch = []
+        self.weights_history = []  # Reset history at start of fit
+        self.bias_history = []  # Reset bias history
+        self.accuracy_history = []  # Reset accuracy history
 
         # Ensure target variable is in {0, 1} format for robustness
         y_ = np.array([1 if i > 0 else 0 for i in y])
 
+        import time
         for i in range(self.n_iters):
+            epoch_start = time.perf_counter()
             errors_this_epoch = 0
             for idx, x_i in enumerate(features):
                 assert self.weights is not None  # type: ignore
@@ -149,10 +158,67 @@ class Perceptron:
                     errors_this_epoch += 1
 
             self.errors_per_epoch.append(errors_this_epoch)
-
+            # Save a copy of the weights and bias after each epoch
+            assert self.weights is not None  # type: ignore
+            self.weights_history.append(self.weights.copy())
+            self.bias_history.append(self.bias)
             # Calculate accuracy at the end of the epoch
             predictions = self.predict(features)
             accuracy = (predictions == y_).mean()
+            self.accuracy_history.append(accuracy)
+
+            # Compute precision, recall, f1_score
+            tp = ((predictions == 1) & (y_ == 1)).sum()
+            tn = ((predictions == 0) & (y_ == 0)).sum()
+            fp = ((predictions == 1) & (y_ == 0)).sum()
+            fn = ((predictions == 0) & (y_ == 1)).sum()
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+            recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+            f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+
+            # Simulate probabilities for ROC-AUC (use linear_output normalized)
+            from sklearn.metrics import roc_auc_score
+            try:
+                assert self.weights is not None  # type: ignore
+                linear_outputs = np.dot(features, self.weights) + self.bias
+                probs = (linear_outputs - linear_outputs.min()) / (linear_outputs.max() - linear_outputs.min() + 1e-8)
+                roc_auc = roc_auc_score(y_, probs)
+            except Exception:
+                roc_auc = 0.0
+
+            # Weight norm (L2)
+            assert self.weights is not None  # type: ignore
+            weight_norm = float(np.linalg.norm(self.weights))
+            # Margin (min distance from decision boundary)
+            try:
+                assert self.weights is not None  # type: ignore
+                margins = np.abs(np.dot(features, self.weights) + self.bias) / (np.linalg.norm(self.weights) + 1e-8)
+                min_margin = float(np.min(margins))
+            except Exception:
+                min_margin = 0.0
+            # Time per epoch
+            epoch_time = time.perf_counter() - epoch_start
+
+            # Log to W&B if active
+            try:
+                import wandb
+                if wandb.run is not None:
+                    wandb.log({
+                        "accuracy": accuracy,
+                        "precision": precision,
+                        "recall": recall,
+                        "f1_score": f1_score,
+                        "errors_per_epoch": errors_this_epoch,
+                        "learning_rate": self.learning_rate,
+                        "roc_auc": roc_auc,
+                        "weight_norm": weight_norm,
+                        "min_margin": min_margin,
+                        "epoch_time": epoch_time
+                    }, step=i+1)
+            except ImportError:
+                pass
+            except Exception:
+                pass
 
             # Log progress at a debug level to avoid cluttering the main console
             assert self.logger is not None  # type: ignore

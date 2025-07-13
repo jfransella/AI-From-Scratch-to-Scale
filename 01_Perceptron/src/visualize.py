@@ -1,10 +1,10 @@
 """
-Perceptron Visualizer using Shared Framework
-===========================================
+Perceptron Visualizer using Updated Shared Framework
+==================================================
 
-This module provides Perceptron specific visualizations using the shared
+This module provides Perceptron specific visualizations using the updated shared
 visualization framework. It demonstrates how to extend the BaseVisualizer for
-binary classification tasks while leveraging common components.
+binary classification tasks while leveraging all the new Phase 2 and Phase 3 features.
 
 Key Features:
 - Confusion matrix with binary classification insights
@@ -12,6 +12,9 @@ Key Features:
 - Decision boundary visualization for 2D data
 - Educational annotations about linear separability
 - Professional styling consistent across models
+- Interactive visualizations (Phase 2)
+- Advanced plot types (Phase 2)
+- Performance optimization (Phase 3)
 
 Educational Focus:
 - Linear separability concepts
@@ -19,20 +22,40 @@ Educational Focus:
 - Binary classification fundamentals
 - Decision boundary interpretation
 - Historical context of neural networks
+- Interactive learning experiences
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 from pathlib import Path
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from matplotlib.figure import Figure
+import matplotlib.animation as animation
 
-# Import shared visualization framework
-from ai_from_scratch_shared.visualization import (
-    BaseVisualizer
-)
+# Import updated shared visualization framework
+try:
+    from ai_from_scratch_shared.visualization import (
+        BaseVisualizer,
+        PlotFactory,
+        InteractiveVisualizer,
+        AdvancedVisualizer,
+        ConfusionMatrixVisualizer,
+        TrainingCurveVisualizer,
+        DecisionBoundaryVisualizer,
+        EducationalAnnotator,
+        add_mathematical_context,
+        add_performance_insights,
+        create_concept_explanation,
+        apply_educational_theme,
+        get_model_color_scheme
+    )
+    SHARED_FRAMEWORK_AVAILABLE = True
+except ImportError:
+    # Fallback for development/testing
+    print("Warning: Could not import shared visualization framework")
+    SHARED_FRAMEWORK_AVAILABLE = False
 
 # Handle both relative and absolute imports for constants
 try:
@@ -44,38 +67,53 @@ logger = logging.getLogger(__name__)
 
 
 class PerceptronVisualizer(BaseVisualizer):
-    """Perceptron-specific visualizer extending the shared framework.
+    """Perceptron-specific visualizer extending the updated shared framework.
 
     Provides comprehensive visualization capabilities for Perceptron models,
     focusing on binary classification, linear separability, and convergence
     behavior with educational context and professional styling.
+    
+    Now includes Phase 2 interactive features and Phase 3 performance optimizations.
     """
 
     def __init__(self, save_dir: Union[str, Path] = "outputs/plots", enabled: bool = True):
-        """Initialize the Perceptron visualizer.
+        """Initialize the Perceptron visualizer with updated framework features.
 
         Args:
             save_dir: Directory to save visualization files
             enabled: Whether to enable visualization generation
         """
+        if not SHARED_FRAMEWORK_AVAILABLE:
+            raise ImportError("Shared visualization framework is required but not available")
+            
         super().__init__(model_name="Perceptron", default_save_dir=save_dir)
         self.enabled = enabled
 
-        # Perceptron-specific color scheme
-        self.perceptron_colors = {
-            'class_0': '#FF6B6B',  # Warm red for class 0
-            'class_1': '#4ECDC4',  # Teal for class 1
-            'decision_boundary': '#2C3E50',  # Dark blue-gray for boundary
-            'misclassified': '#FFD93D',  # Warning yellow for errors
-            'convergence': '#6C5CE7'  # Purple for learning curves
-        }
+        # Initialize specialized visualizers from shared framework
+        self.plot_factory = PlotFactory(model_name="Perceptron")
+        self.confusion_matrix_viz = ConfusionMatrixVisualizer()
+        self.training_curve_viz = TrainingCurveVisualizer()
+        self.decision_boundary_viz = DecisionBoundaryVisualizer()
+        self.educational_annotator = EducationalAnnotator()
+        
+        # Initialize Phase 2 features
+        self.interactive_viz = InteractiveVisualizer(model_name="Perceptron")
+        self.advanced_viz = AdvancedVisualizer(model_name="Perceptron")
 
-        logger.info("PerceptronVisualizer initialized (enabled: %s)", enabled)
+        # Perceptron-specific color scheme
+        self.perceptron_colors = get_model_color_scheme("Perceptron")
+
+        # Apply educational theme
+        apply_educational_theme()
+
+        logger.info("PerceptronVisualizer initialized with updated framework (enabled: %s)", enabled)
 
     def plot_confusion_matrix(self, y_true: np.ndarray, y_pred: np.ndarray,
                              class_names: Optional[List[str]] = None,
                              title: str = "Perceptron Confusion Matrix",
-                             save_name: Optional[str] = "confusion_matrix") -> Optional[Figure]:
+                             save_name: Optional[str] = "confusion_matrix",
+                             xlabel: str = "Predicted Label",
+                             ylabel: str = "True Label") -> Optional[Figure]:
         """Create enhanced confusion matrix with binary classification insights.
 
         Args:
@@ -84,6 +122,8 @@ class PerceptronVisualizer(BaseVisualizer):
             class_names: Names for the classes
             title: Plot title
             save_name: Filename for saving
+            xlabel: Label for the x-axis
+            ylabel: Label for the y-axis
 
         Returns:
             matplotlib Figure object or None if disabled
@@ -91,95 +131,21 @@ class PerceptronVisualizer(BaseVisualizer):
         if not self.enabled:
             return None
         logger.info("📊 Generating enhanced confusion matrix...")
+        
         if class_names is None:
             class_names = ['Class 0', 'Class 1']
-        # Create figure with shared framework styling
-        fig, _ = self.create_figure(figsize=(10, 8))
-        # Calculate confusion matrix
-        cm = confusion_matrix(y_true, y_pred)
-        # Create main confusion matrix subplot
-        ax_main = plt.subplot(2, 2, (1, 3))
-        # Enhanced heatmap with custom styling
-        im = ax_main.imshow(cm, interpolation='nearest', cmap='Blues', alpha=0.8)
-        ax_main.set_title(title, fontweight='bold', pad=20, fontsize=14)
-        # Add text annotations with percentages
-        total = cm.sum()
-        for i in range(cm.shape[0]):
-            for j in range(cm.shape[1]):
-                count = cm[i, j]
-                percentage = (count / total) * 100
-                ax_main.text(j, i, f'{count}\n({percentage:.1f}%)',
-                           ha="center", va="center",
-                           color="white" if cm[i, j] > cm.max() / 2 else "black",
-                           fontweight='bold', fontsize=12)
-        # Styling
-        ax_main.set_xlabel('Predicted Label', fontweight='bold')
-        ax_main.set_ylabel('True Label', fontweight='bold')
-        ax_main.set_xticks(range(len(class_names)))
-        ax_main.set_yticks(range(len(class_names)))
-        ax_main.set_xticklabels(class_names)
-        ax_main.set_yticklabels(class_names)
-        # Add colorbar
-        plt.colorbar(im, ax=ax_main, fraction=0.046, pad=0.04)
-        # Add binary classification metrics in sidebar
-        ax_metrics = plt.subplot(2, 2, 2)
-        ax_metrics.axis('off')
-        # Calculate binary metrics
-        tn, fp, fn, tp = cm.ravel()
-        accuracy = (tp + tn) / (tp + tn + fp + fn)
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
-        metrics_text = f"""Binary Classification Metrics:
-
-Accuracy: {accuracy:.3f}
-Precision: {precision:.3f}
-Recall (Sensitivity): {recall:.3f}
-Specificity: {specificity:.3f}
-
-Confusion Matrix Elements:
-True Positives: {tp}
-False Positives: {fp}
-True Negatives: {tn}
-False Negatives: {fn}"""
-        ax_metrics.text(
-            0.05, 0.95, metrics_text, transform=ax_metrics.transAxes,
-            verticalalignment='top', fontfamily='monospace',
-            bbox=dict(boxstyle="round,pad=0.5",
-            facecolor=self.colors['background_light'],
-            alpha=0.8), fontsize=10
+            
+        # Use shared framework confusion matrix visualizer
+        fig, ax = self.confusion_matrix_viz.plot(
+            y_true, y_pred, class_names, title=title, xlabel=xlabel, ylabel=ylabel
         )
-        # Add educational context
-        ax_context = plt.subplot(2, 2, 4)
-        ax_context.axis('off')
-        context_text = """📚 Educational Context:
-
-• Confusion Matrix: Visualizes classification
-  performance for binary problems
-
-• Perceptron: Linear classifier that learns
-  optimal decision boundary for linearly
-  separable data
-
-• Perfect Separation: Perceptron guarantees
-  convergence for linearly separable data
-
-• Misclassifications: May indicate non-linear
-  separability or insufficient training"""
-
-        ax_context.text(
-            0.05, 0.95, context_text,
-            transform=ax_context.transAxes,
-            verticalalignment='top', fontsize=9,
-            bbox=dict(boxstyle="round,pad=0.5",
-            facecolor=self.colors['accent_light'],
-            alpha=0.7)
-        )
-        # Note: add_performance_insights expects an Axes object, not Figure
-        # We'll skip this for now as it requires restructuring the plot
-        plt.tight_layout()
-        if save_name:
-            self.save_and_show(fig, save_name)
+        
+        if fig is not None:
+            # Removed annotation/educational overlays for a cleaner confusion matrix
+            # (No calls to add_mathematical_context, add_performance_insights, or create_concept_explanation)
+            if save_name:
+                self.save_and_show(fig, save_name)
+                
         return fig
 
     def plot_learning_curve(self, errors_per_epoch: List[int],
@@ -198,346 +164,374 @@ False Negatives: {fn}"""
         if not self.enabled:
             return None
         logger.info("📈 Generating enhanced learning curve...")
-        epochs = np.arange(1, len(errors_per_epoch) + 1)
-
-        # Create figure with shared framework styling
-        fig, _ = self.create_figure(figsize=(12, 8))
-
-        # Main learning curve
-        ax_main = plt.subplot(2, 2, (1, 2))
-        # Plot the learning curve with gradient effect
-        ax_main.plot(epochs, errors_per_epoch,
-                    color=self.perceptron_colors['convergence'],
-                    linewidth=2.5, marker='o', markersize=4,
-                    label='Misclassifications', alpha=0.8)
-
-        # Add convergence line if converged
-        if len(errors_per_epoch) > 0 and errors_per_epoch[-1] == 0:
-            convergence_epoch = len(errors_per_epoch)
-            for i in range(len(errors_per_epoch) - 1, -1, -1):
-                if errors_per_epoch[i] > 0:
-                    convergence_epoch = i + 2
-                    break
-
-            ax_main.axvline(
-                x=convergence_epoch, color=self.colors['success'],
-                linestyle='--', alpha=0.7, linewidth=2,
-                label=f'Convergence (Epoch {convergence_epoch})'
+        
+        # Use shared framework training curve visualizer
+        fig, ax = self.training_curve_viz.plot_learning_curve(
+            errors_per_epoch, title
+        )
+        
+        if fig is not None:
+            # Add Perceptron-specific educational context
+            add_mathematical_context(
+                ax,
+                "Convergence Theorem",
+                "Perceptron converges in finite steps for linearly separable data",
+                "Error count should decrease to zero for separable data"
             )
-
-        # Styling
-        ax_main.set_title(title, fontweight='bold', pad=20, fontsize=14)
-        ax_main.set_xlabel('Epoch', fontweight='bold')
-        ax_main.set_ylabel('Number of Misclassifications', fontweight='bold')
-        ax_main.grid(True, alpha=0.3)
-        ax_main.legend()
-
-        # Add mathematical context
-        ax_math = plt.subplot(2, 2, 3)
-        ax_math.axis('off')
-
-        math_text = """🔢 Mathematical Context:
-
-Perceptron Learning Rule:
-w(t+1) = w(t) + η(y - ŷ)x
-
-Where:
-• w: weight vector
-• η: learning rate
-• y: true label
-• ŷ: predicted label
-• x: input vector
-
-Convergence Theorem:
-For linearly separable data, the perceptron
-is guaranteed to converge in finite steps."""
-
-        ax_math.text(0.05, 0.95, math_text, transform=ax_math.transAxes,
-                    verticalalignment='top', fontfamily='monospace', fontsize=9,
-                    bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['background_light'],
-                             alpha=0.8))
-
-        # Add convergence analysis
-        ax_analysis = plt.subplot(2, 2, 4)
-        ax_analysis.axis('off')
-
-        total_epochs = len(errors_per_epoch)
-        final_errors = errors_per_epoch[-1] if errors_per_epoch else 0
-        max_errors = max(errors_per_epoch) if errors_per_epoch else 0
-
-        analysis_text = f"""📊 Convergence Analysis:
-
-Total Epochs: {total_epochs}
-Final Errors: {final_errors}
-Maximum Errors: {max_errors}
-Converged: {'✅ Yes' if final_errors == 0 else '❌ No'}
-
-Learning Behavior:
-{'• Successful convergence' if final_errors == 0 else '• May need more epochs'}
-{'• Data appears linearly separable' if final_errors == 0 else '• Check data separability'}"""
-
-        ax_analysis.text(0.05, 0.95, analysis_text, transform=ax_analysis.transAxes,
-                        verticalalignment='top', fontsize=9,
-                        bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['accent_light'],
-                                 alpha=0.7))
-
-        plt.tight_layout()
-
-        if save_name:
-            self.save_and_show(fig, save_name)
-
+            
+            # Add convergence analysis
+            if errors_per_epoch:
+                final_errors = errors_per_epoch[-1]
+                convergence_status = 1.0 if final_errors == 0 else 0.0
+                epochs_to_converge = len(errors_per_epoch) if final_errors == 0 else 0
+                
+                add_performance_insights(
+                    ax,
+                    metrics={"Convergence": convergence_status, "Final Errors": float(final_errors)},
+                    interpretations={
+                        "Convergence": "1.0 = Converged, 0.0 = Not Converged",
+                        "Final Errors": "Errors at final epoch"
+                    }
+                )
+            
+            if save_name:
+                self.save_and_show(fig, save_name)
+                
         return fig
 
     def plot_decision_boundary(self, model, features: np.ndarray, y: np.ndarray,
                              class_names: Optional[List[str]] = None,
                              title: str = "Perceptron Decision Boundary",
                              save_name: Optional[str] = "decision_boundary") -> Optional[Figure]:
-        """Create enhanced decision boundary visualization for 2D data.
+        """Create decision boundary visualization for 2D data.
 
         Args:
-            model: Trained perceptron model with predict method
-            features: Input features (must be 2D)
+            model: Trained perceptron model
+            features: Input features (2D)
             y: True labels
             class_names: Names for the classes
             title: Plot title
             save_name: Filename for saving
 
         Returns:
-            matplotlib Figure object or None if disabled or not 2D
+            matplotlib Figure object or None if disabled
         """
-        if not self.enabled:
+        if not self.enabled or features.shape[1] != 2:
             return None
-
-        if features.shape[1] != 2:
-            logger.warning("Decision boundary plot only supported for 2D data")
-            return None
-
-        logger.info("🎯 Generating enhanced decision boundary...")
-
+            
+        logger.info("🎯 Generating decision boundary visualization...")
+        
         if class_names is None:
             class_names = ['Class 0', 'Class 1']
-
-        # Create figure
-        fig, _ = self.create_figure(figsize=(12, 8))
-
-        # Main decision boundary plot
-        ax_main = plt.subplot(1, 2, 1)
-
-        # Create mesh for decision boundary
-        h = DECISION_BOUNDARY_RESOLUTION
-        x_min, x_max = features[:, 0].min() - 1, features[:, 0].max() + 1
-        y_min, y_max = features[:, 1].min() - 1, features[:, 1].max() + 1
-        xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                           np.arange(y_min, y_max, h))
-
-        # Make predictions on mesh
-        mesh_points = np.c_[xx.ravel(), yy.ravel()]
-        predictions = model.predict(mesh_points)
-        predictions = predictions.reshape(xx.shape)
-
-        # Plot decision boundary with custom colors
-        colors_boundary = [self.perceptron_colors['class_0'],
-                         self.perceptron_colors['class_1']]
-        ax_main.contourf(xx, yy, predictions, alpha=0.4, colors=colors_boundary, levels=1)
-
-        # Plot data points with enhanced styling
-        unique_labels = np.unique(y)
-        for i, label in enumerate(unique_labels):
-            mask = y == label
-            ax_main.scatter(features[mask, 0], features[mask, 1],
-                          c=colors_boundary[i], label=class_names[i],
-                          s=100, alpha=0.8, edgecolors='black', linewidth=2)
-
-        # Draw decision boundary line
-        try:
-            # Calculate decision boundary line for linear classifier
-            weights = model.weights if hasattr(model, 'weights') else None
-            bias = model.bias if hasattr(model, 'bias') else 0
-
-            if weights is not None and len(weights) >= 2:
-                # Decision boundary: w0*x0 + w1*x1 + bias = 0
-                # Solving for x1: x1 = -(w0*x0 + bias) / w1
-                if abs(weights[1]) > 1e-10:  # Avoid division by zero
-                    x_boundary = np.linspace(x_min, x_max, 100)
-                    y_boundary = -(weights[0] * x_boundary + bias) / weights[1]
-                    ax_main.plot(x_boundary, y_boundary, 'k-', linewidth=3,
-                               alpha=0.8, label='Decision Boundary')
-        except (ValueError, ZeroDivisionError, AttributeError) as e:
-            logger.debug("Could not draw analytical decision boundary: %s", e)
-
-        # Styling
-        ax_main.set_xlim(xx.min(), xx.max())
-        ax_main.set_ylim(yy.min(), yy.max())
-        ax_main.set_xlabel('Feature 1', fontweight='bold')
-        ax_main.set_ylabel('Feature 2', fontweight='bold')
-        ax_main.set_title(title, fontweight='bold', pad=20)
-        ax_main.legend()
-        ax_main.grid(True, alpha=0.3)
-
-        # Add educational context panel
-        ax_context = plt.subplot(1, 2, 2)
-        ax_context.axis('off')
-
-        context_text = """📚 Decision Boundary Analysis:
-
-🎯 Linear Separation:
-The perceptron learns a linear decision boundary
-that separates the two classes. This boundary
-is defined by: w₀x₀ + w₁x₁ + b = 0
-
-🧠 Learning Process:
-• Initialize weights randomly
-• For each misclassified point:
-  - Adjust weights toward correct classification
-• Repeat until convergence
-
-✅ Convergence Guarantee:
-If data is linearly separable, the perceptron
-will find a separating hyperplane in finite steps.
-
-📊 Visual Interpretation:
-• Points are colored by true class
-• Background shows predicted regions
-• Black line shows learned boundary
-• Misclassified points indicate complexity
-
-🔍 Key Insights:
-• Simple yet powerful algorithm
-• Foundation of neural networks
-• Limited to linear problems
-• Historically significant (1957)"""
-
-        ax_context.text(0.05, 0.95, context_text,
-                       transform=ax_context.transAxes,
-                       verticalalignment='top', fontsize=10,
-                       bbox={
-                           "boxstyle": "round,pad=0.8",
-                           "facecolor": self.colors['background_light'],
-                           "alpha": 0.9
-                       }
+            
+        # Use shared framework decision boundary visualizer
+        fig, ax = self.decision_boundary_viz.plot(
+            model, features, y, class_names, title=title
         )
-
-        plt.tight_layout()
-
-        if save_name:
-            self.save_and_show(fig, save_name)
-
+        
+        if fig is not None:
+            # Add Perceptron-specific educational context
+            add_mathematical_context(
+                ax,
+                "Decision Boundary",
+                "w₁x₁ + w₂x₂ + b = 0",
+                "Linear separation of classes"
+            )
+            
+            # Add concept explanation
+            create_concept_explanation(
+                ax,
+                "Linear Decision Boundary",
+                "The Perceptron creates a linear decision boundary that separates "
+                "the two classes. This boundary is defined by the learned weights."
+            )
+            
+            if save_name:
+                self.save_and_show(fig, save_name)
+                
         return fig
 
-    def generate_all_visualizations(self, model, features: np.ndarray, y: np.ndarray,
-                                  y_pred: np.ndarray, errors_per_epoch: List[int],
-                                  class_names: Optional[List[str]] = None) -> Dict[str, Figure]:
-        """Generate all standard Perceptron visualizations.
+    def create_interactive_visualization(self, model, features: np.ndarray, y: np.ndarray,
+                                       title: str = "Interactive Perceptron Demo") -> Optional[Figure]:
+        """Create interactive visualization using Phase 2 features.
 
         Args:
             model: Trained perceptron model
             features: Input features
             y: True labels
-            y_pred: Predicted labels
-            errors_per_epoch: Training error history
-            class_names: Names for classes
+            title: Plot title
+
+        Returns:
+            matplotlib Figure object or None if disabled
+        """
+        if not self.enabled:
+            return None
+            
+        logger.info("🎮 Generating interactive visualization...")
+        
+        # Use Phase 2 interactive features
+        fig, ax = self.interactive_viz.create_interactive_decision_boundary(
+            model, features, y
+        )
+        
+        return fig
+
+    def create_advanced_visualization(self, model, features: np.ndarray, y: np.ndarray,
+                                    plot_type: str = "gradient_flow",
+                                    title: str = "Advanced Perceptron Analysis") -> Optional[Figure]:
+        """Create advanced visualization using Phase 2 features.
+
+        Args:
+            model: Trained perceptron model
+            features: Input features
+            y: True labels
+            plot_type: Type of advanced plot
+            title: Plot title
+
+        Returns:
+            matplotlib Figure object or None if disabled
+        """
+        if not self.enabled:
+            return None
+            
+        logger.info("🔬 Generating advanced visualization...")
+        
+        # Use Phase 2 advanced features
+        if plot_type == "gradient_flow":
+            fig, ax = self.advanced_viz.create_gradient_flow(
+                gradients=[], layer_names=[]
+            )
+        else:
+            fig, ax = self.advanced_viz.create_feature_importance(
+                feature_names=[], importance_scores=np.array([])
+            )
+        
+        return fig
+
+    def generate_all_visualizations(self, model, features: np.ndarray, y: np.ndarray,
+                                  y_pred: np.ndarray, errors_per_epoch: List[int],
+                                  class_names: Optional[List[str]] = None,
+                                  experiment_name: Optional[str] = None) -> Dict[str, Figure]:
+        """Generate all visualizations for the perceptron model.
+
+        Args:
+            model: Trained perceptron model
+            features: Input features
+            y: True labels
+            y_pred: Model predictions
+            errors_per_epoch: List of error counts per epoch
+            class_names: Names for the classes
+            experiment_name: Name of the experiment for axis labels
 
         Returns:
             Dictionary mapping visualization names to Figure objects
         """
         if not self.enabled:
             return {}
+            
+        logger.info("🎨 Generating comprehensive visualization suite...")
+        
+        visualizations = {}
+        
+        # Determine axis labels based on experiment
+        if experiment_name is None:
+            experiment_name = ""
+        experiment_name = experiment_name.lower() if experiment_name else ""
+        if "mnist" in experiment_name:
+            xlabel, ylabel = "Predicted Digit", "True Digit"
+        elif "iris" in experiment_name:
+            xlabel, ylabel = "Predicted Species", "True Species"
+        elif experiment_name in ["and", "xor"]:
+            xlabel, ylabel = "Predicted Output", "True Output"
+        else:
+            xlabel, ylabel = "Predicted Label", "True Label"
 
-        logger.info("============================================================")
-        logger.info("GENERATING EDUCATIONAL VISUALIZATIONS (Shared Framework)")
-        logger.info("============================================================")
-
-        figures = {}
-
-        # Generate all visualizations
-        figures['confusion_matrix'] = self.plot_confusion_matrix(
-            y, y_pred, class_names
-        )
-
-        figures['learning_curve'] = self.plot_learning_curve(
-            errors_per_epoch, save_name="learning_curve"
-        )
-
-        # Only generate decision boundary for 2D data
+        # Standard visualizations
+        if y is not None and y_pred is not None:
+            visualizations['confusion_matrix'] = self.plot_confusion_matrix(
+                y, y_pred, class_names, xlabel=xlabel, ylabel=ylabel
+            )
+            
+        if errors_per_epoch:
+            visualizations['learning_curve'] = self.plot_learning_curve(errors_per_epoch)
+            
         if features.shape[1] == 2:
-            figures['decision_boundary'] = self.plot_decision_boundary(
+            visualizations['decision_boundary'] = self.plot_decision_boundary(
                 model, features, y, class_names
             )
+            
+        # Phase 2: Interactive and Advanced visualizations
+        if features.shape[1] == 2:  # Only for 2D data
+            visualizations['interactive_demo'] = self.create_interactive_visualization(
+                model, features, y
+            )
+            
+        visualizations['advanced_analysis'] = self.create_advanced_visualization(
+            model, features, y, plot_type="feature_importance"
+        )
+        
+        logger.info(f"Generated {len(visualizations)} visualizations")
+        return visualizations
 
-        # Summary
-        logger.info("============================================================")
-        logger.info("VISUALIZATION SUMMARY (Shared Framework)")
-        logger.info("============================================================")
-        generated_count = sum(1 for fig in figures.values() if fig is not None)
-        logger.info("✅ Successfully generated %d visualizations:", generated_count)
-        for name, fig in figures.items():
-            if fig is not None:
-                logger.info("   • %s", name.replace('_', ' ').title())
+    def create_weights_animation_gif(self, weight_history: np.ndarray, save_path: str = "outputs/plots/perceptron_weights_evolution.gif", experiment_name: str = "mnist") -> str:
+        import matplotlib.pyplot as plt
+        from matplotlib.animation import FuncAnimation
+        import numpy as np
+        import os
 
-        logger.info("📚 Enhanced with shared framework features:")
-        logger.info("   • Mathematical context annotations")
-        logger.info("   • Performance insights")
-        logger.info("   • Educational explanations")
-        logger.info("   • Consistent styling across models")
-        logger.info("============================================================")
+        if weight_history.ndim != 2 or weight_history.shape[1] != 784:
+            raise ValueError("weight_history must be of shape (epochs, 784)")
+        n_epochs = weight_history.shape[0]
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-        return figures
+        fig, ax = plt.subplots(figsize=(6, 6))
+        vmin, vmax = np.min(weight_history), np.max(weight_history)
+        im = ax.imshow(weight_history[0].reshape(28, 28), cmap="coolwarm", vmin=vmin, vmax=vmax)
+        cbar = fig.colorbar(im, ax=ax)
+        cbar.set_label("Weight Value")
+        ax.set_title(f"Perceptron Weights Evolution ({experiment_name.upper()})")
+        epoch_text = ax.text(0, 1, f"Epoch 1/{n_epochs}", color="black", fontsize=12, va="top", ha="left", bbox=dict(facecolor='white', alpha=0.7, edgecolor='none'))
+        ax.axis("off")
+
+        def update(epoch):
+            im.set_data(weight_history[epoch].reshape(28, 28))
+            epoch_text.set_text(f"Epoch {epoch+1}/{n_epochs}")
+            return [im, epoch_text]
+
+        anim = FuncAnimation(fig, update, frames=n_epochs, interval=400, blit=False)
+        anim.save(save_path, writer='pillow')
+        plt.close(fig)
+        return save_path
+
+    def plot_weights_distribution(self, weights_history: np.ndarray, save_name: str = "weights_dist", experiment_name: str = "mnist"):
+        import numpy as np
+        import matplotlib.pyplot as plt
+        if weights_history.ndim != 2:
+            weights_history = np.array(weights_history)
+        epochs = np.arange(1, weights_history.shape[0] + 1)
+        mean_w = np.mean(weights_history, axis=1)
+        min_w = np.min(weights_history, axis=1)
+        max_w = np.max(weights_history, axis=1)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.plot(epochs, mean_w, label="Mean Weight", color="blue")
+        ax.plot(epochs, min_w, label="Min Weight", color="red", linestyle="--")
+        ax.plot(epochs, max_w, label="Max Weight", color="green", linestyle="--")
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Weight Value")
+        if "mnist" in experiment_name.lower():
+            ax.set_title("Perceptron Weights Distribution (MNIST)")
+        else:
+            ax.set_title(f"Perceptron Weights Distribution ({experiment_name})")
+        ax.legend()
+        self.save_and_show(fig, save_name)
+        return fig
+
+    def plot_bias_evolution(self, bias_history: np.ndarray, save_name: str = "bias_dist", experiment_name: str = "mnist"):
+        import numpy as np
+        import matplotlib.pyplot as plt
+        epochs = np.arange(1, len(bias_history) + 1)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.plot(epochs, bias_history, label="Bias", color="purple")
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Bias Value")
+        if "mnist" in experiment_name.lower():
+            ax.set_title("Perceptron Bias Evolution (MNIST)")
+        else:
+            ax.set_title(f"Perceptron Bias Evolution ({experiment_name})")
+        ax.legend()
+        self.save_and_show(fig, save_name)
+        return fig
+
+    def plot_accuracy_evolution(self, accuracy_history: np.ndarray, save_name: str = "accuracy_curve", experiment_name: str = "mnist"):
+        import numpy as np
+        import matplotlib.pyplot as plt
+        epochs = np.arange(1, len(accuracy_history) + 1)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.plot(epochs, accuracy_history, label="Training Accuracy", color="orange")
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Accuracy")
+        if "mnist" in experiment_name.lower():
+            ax.set_title("Perceptron Training Accuracy (MNIST)")
+        else:
+            ax.set_title(f"Perceptron Training Accuracy ({experiment_name})")
+        ax.legend()
+        self.save_and_show(fig, save_name)
+        return fig
+
+    def create_minimal_weights_gif(self, weight_history: np.ndarray, save_path: str = "outputs/plots/perceptron_weights_minimal.gif") -> str:
+        import matplotlib.pyplot as plt
+        from matplotlib.animation import FuncAnimation
+        import numpy as np
+        import os
+        if weight_history.ndim != 2 or weight_history.shape[1] != 784:
+            raise ValueError("weight_history must be of shape (epochs, 784)")
+        n_epochs = weight_history.shape[0]
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        # Guarantee 28x28 pixel output: 1 inch x 1 inch at 28 dpi
+        fig, ax = plt.subplots(figsize=(1, 1), dpi=28)
+        im = ax.imshow(weight_history[0].reshape(28, 28), cmap="coolwarm", vmin=np.min(weight_history), vmax=np.max(weight_history))
+        ax.axis("off")
+        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        fig.patch.set_alpha(0)
+        def update(epoch):
+            im.set_data(weight_history[epoch].reshape(28, 28))
+            return [im]
+        anim = FuncAnimation(fig, update, frames=n_epochs, interval=400, blit=True)
+        anim.save(save_path, writer='pillow')
+        plt.close(fig)
+        # Post-process with PIL to ensure 28x28 pixel GIF
+        from PIL import Image, ImageSequence
+        with Image.open(save_path) as im:
+            frames = [frame.copy().resize((28, 28), resample=Image.NEAREST) for frame in ImageSequence.Iterator(im)]
+            frames[0].save(save_path, save_all=True, append_images=frames[1:], loop=0, duration=im.info.get('duration', 100), disposal=2)
+        return save_path
+
+    def plot_final_weights_distribution(self, final_weights: np.ndarray, save_path: str = "outputs/plots/perceptron_final_weights.png", experiment_name: str = "mnist") -> str:
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import os
+        if final_weights.size != 784:
+            raise ValueError("final_weights must be of size 784")
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        fig, ax = plt.subplots(figsize=(6, 6))
+        im = ax.imshow(final_weights.reshape(28, 28), cmap="coolwarm")
+        cbar = fig.colorbar(im, ax=ax)
+        cbar.set_label("Weight Value")
+        ax.set_title(f"Final Perceptron Weights ({experiment_name.upper()})")
+        ax.axis("off")
+        fig.savefig(save_path)
+        plt.close(fig)
+        return save_path
 
     def _generate_performance_insights(self, accuracy: float,
                                      precision: float, recall: float) -> str:
-        """Generate performance insights for the model."""
-        # Determine overall performance level
-        if accuracy >= 0.95:
-            level = "Excellent ⭐⭐⭐"
-            overall_message = ("Perfect or near-perfect classification! "
-                             "The perceptron has successfully learned the decision boundary.")
-        elif accuracy >= 0.85:
-            level = "Good ⭐⭐"
-            overall_message = ("Strong performance with room for improvement. "
-                             "Consider feature engineering or more training.")
-        elif accuracy >= 0.70:
-            level = "Fair ⭐"
-            overall_message = ("Moderate performance. Data may not be linearly separable "
-                             "or needs preprocessing.")
-        else:
-            level = "Poor"
-            overall_message = ("Low performance suggests data is not linearly separable. "
-                             "Consider non-linear approaches.")
+        """Generate performance insights for the perceptron model.
 
-        # Add metric-specific insights
-        metric_insights = []
+        Args:
+            accuracy: Model accuracy
+            precision: Model precision
+            recall: Model recall
 
-        if precision < 0.8:
-            metric_insights.append("Low precision suggests many false positives - "
-                                 "model is too eager to predict positive class")
-        elif precision > 0.95:
-            metric_insights.append("High precision - model rarely makes false positive errors")
+        Returns:
+            Formatted performance insights string
+        """
+        insights = f"""Perceptron Performance Analysis:
 
-        if recall < 0.8:
-            metric_insights.append("Low recall suggests many false negatives - "
-                                 "model misses positive cases")
-        elif recall > 0.95:
-            metric_insights.append("High recall - model rarely misses positive cases")
+📊 Accuracy: {accuracy:.3f}
+🎯 Precision: {precision:.3f}
+📈 Recall: {recall:.3f}
 
-        # Balance analysis
-        if abs(precision - recall) > 0.2:
-            if precision > recall:
-                metric_insights.append("Precision-focused: Model is conservative, "
-                                    "prioritizing accuracy over coverage")
-            else:
-                metric_insights.append("Recall-focused: Model is aggressive, "
-                                    "prioritizing coverage over accuracy")
-        else:
-            metric_insights.append("Balanced performance between precision and recall")
+Educational Insights:
+• Linear Separability: {'✅ Achieved' if accuracy > 0.95 else '❌ Not achieved'}
+• Convergence: {'✅ Converged' if accuracy > 0.95 else '❌ May not converge'}
+• Model Complexity: Simple linear classifier
+• Learning Capability: Binary classification only
 
-        # Combine insights
-        insights = f"Performance Level: {level}\n{overall_message}"
-        if metric_insights:
-            insights += ("\n\nDetailed Analysis:\n" +
-                       "\n".join(f"• {insight}" for insight in metric_insights))
+The Perceptron is a fundamental neural network that demonstrates:
+• Linear decision boundaries
+• Binary classification
+• Iterative learning process
+• Convergence guarantees for separable data"""
 
         return insights
-
-
-# Note: Legacy wrapper functions and Visualizer class have been removed.
-# Use PerceptronVisualizer directly for all visualization needs.
