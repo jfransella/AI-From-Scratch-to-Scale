@@ -96,6 +96,11 @@ class PerceptronVisualizer(BaseVisualizer):
         self.decision_boundary_viz = DecisionBoundaryVisualizer()
         self.educational_annotator = EducationalAnnotator()
         
+        # Set save directory for shared framework visualizers
+        self.training_curve_viz.default_save_dir = self.default_save_dir
+        self.decision_boundary_viz.default_save_dir = self.default_save_dir
+        self.confusion_matrix_viz.default_save_dir = self.default_save_dir
+        
         # Initialize Phase 2 features
         self.interactive_viz = InteractiveVisualizer(model_name="Perceptron")
         self.advanced_viz = AdvancedVisualizer(model_name="Perceptron")
@@ -130,7 +135,7 @@ class PerceptronVisualizer(BaseVisualizer):
         """
         if not self.enabled:
             return None
-        logger.info("📊 Generating enhanced confusion matrix...")
+        logger.info("Generating enhanced confusion matrix...")
         
         if class_names is None:
             class_names = ['Class 0', 'Class 1']
@@ -163,11 +168,11 @@ class PerceptronVisualizer(BaseVisualizer):
         """
         if not self.enabled:
             return None
-        logger.info("📈 Generating enhanced learning curve...")
+        logger.info("Generating enhanced learning curve...")
         
         # Use shared framework training curve visualizer
         fig, ax = self.training_curve_viz.plot_learning_curve(
-            errors_per_epoch, title
+            errors_per_epoch, title, save_path=save_name
         )
         
         if fig is not None:
@@ -219,14 +224,14 @@ class PerceptronVisualizer(BaseVisualizer):
         if not self.enabled or features.shape[1] != 2:
             return None
             
-        logger.info("🎯 Generating decision boundary visualization...")
+        logger.info("Generating decision boundary visualization...")
         
         if class_names is None:
             class_names = ['Class 0', 'Class 1']
             
         # Use shared framework decision boundary visualizer
         fig, ax = self.decision_boundary_viz.plot(
-            model, features, y, class_names, title=title
+            model, features, y, class_names, title=title, save_path=save_name
         )
         
         if fig is not None:
@@ -294,7 +299,7 @@ class PerceptronVisualizer(BaseVisualizer):
         if not self.enabled:
             return None
             
-        logger.info("🔬 Generating advanced visualization...")
+        logger.info("Generating advanced visualization...")
         
         # Use Phase 2 advanced features
         if plot_type == "gradient_flow":
@@ -311,7 +316,8 @@ class PerceptronVisualizer(BaseVisualizer):
     def generate_all_visualizations(self, model, features: np.ndarray, y: np.ndarray,
                                   y_pred: np.ndarray, errors_per_epoch: List[int],
                                   class_names: Optional[List[str]] = None,
-                                  experiment_name: Optional[str] = None) -> Dict[str, Figure]:
+                                  experiment_name: Optional[str] = None,
+                                  run_subdir: str = "outputs/plots") -> Dict[str, Figure]:
         """Generate all visualizations for the perceptron model.
 
         Args:
@@ -322,6 +328,7 @@ class PerceptronVisualizer(BaseVisualizer):
             errors_per_epoch: List of error counts per epoch
             class_names: Names for the classes
             experiment_name: Name of the experiment for axis labels
+            run_subdir: Subdirectory to save all visualizations in
 
         Returns:
             Dictionary mapping visualization names to Figure objects
@@ -329,7 +336,7 @@ class PerceptronVisualizer(BaseVisualizer):
         if not self.enabled:
             return {}
             
-        logger.info("🎨 Generating comprehensive visualization suite...")
+        logger.info("Generating comprehensive visualization suite...")
         
         visualizations = {}
         
@@ -346,28 +353,35 @@ class PerceptronVisualizer(BaseVisualizer):
         else:
             xlabel, ylabel = "Predicted Label", "True Label"
 
-        # Standard visualizations
+        # Create a new visualizer instance with the correct save directory
+        # This prevents path duplication by setting the directory at the visualizer level
+        run_visualizer = PerceptronVisualizer(save_dir=run_subdir, enabled=self.enabled)
+        
+        # Standard visualizations - pass only filenames, not full paths
         if y is not None and y_pred is not None:
-            visualizations['confusion_matrix'] = self.plot_confusion_matrix(
-                y, y_pred, class_names, xlabel=xlabel, ylabel=ylabel
+            visualizations['confusion_matrix'] = run_visualizer.plot_confusion_matrix(
+                y, y_pred, class_names, xlabel=xlabel, ylabel=ylabel, save_name="confusion_matrix.png"
             )
             
         if errors_per_epoch:
-            visualizations['learning_curve'] = self.plot_learning_curve(errors_per_epoch)
+            logger.info(f"Generating learning curve with {len(errors_per_epoch)} epochs")
+            visualizations['learning_curve'] = run_visualizer.plot_learning_curve(errors_per_epoch, save_name="learning_curve.png")
+        else:
+            logger.info("No errors_per_epoch data available for learning curve")
             
         if features.shape[1] == 2:
-            visualizations['decision_boundary'] = self.plot_decision_boundary(
-                model, features, y, class_names
+            visualizations['decision_boundary'] = run_visualizer.plot_decision_boundary(
+                model, features, y, class_names, save_name="decision_boundary.png"
             )
             
         # Phase 2: Interactive and Advanced visualizations
         if features.shape[1] == 2:  # Only for 2D data
-            visualizations['interactive_demo'] = self.create_interactive_visualization(
-                model, features, y
+            visualizations['interactive_demo'] = run_visualizer.create_interactive_visualization(
+                model, features, y, title=f"Interactive Perceptron Demo"
             )
             
-        visualizations['advanced_analysis'] = self.create_advanced_visualization(
-            model, features, y, plot_type="feature_importance"
+        visualizations['advanced_analysis'] = run_visualizer.create_advanced_visualization(
+            model, features, y, plot_type="feature_importance", title=f"Advanced Perceptron Analysis"
         )
         
         logger.info(f"Generated {len(visualizations)} visualizations")
@@ -482,9 +496,9 @@ class PerceptronVisualizer(BaseVisualizer):
         plt.close(fig)
         # Post-process with PIL to ensure 28x28 pixel GIF
         from PIL import Image, ImageSequence
-        with Image.open(save_path) as im:
-            frames = [frame.copy().resize((28, 28), resample=Image.NEAREST) for frame in ImageSequence.Iterator(im)]
-            frames[0].save(save_path, save_all=True, append_images=frames[1:], loop=0, duration=im.info.get('duration', 100), disposal=2)
+        with Image.open(save_path) as img:
+            frames = [frame.copy().resize((28, 28), resample=Image.Resampling.NEAREST) for frame in ImageSequence.Iterator(img)]
+            frames[0].save(save_path, save_all=True, append_images=frames[1:], loop=0, duration=img.info.get('duration', 100), disposal=2)
         return save_path
 
     def plot_final_weights_distribution(self, final_weights: np.ndarray, save_path: str = "outputs/plots/perceptron_final_weights.png", experiment_name: str = "mnist") -> str:
@@ -518,13 +532,13 @@ class PerceptronVisualizer(BaseVisualizer):
         """
         insights = f"""Perceptron Performance Analysis:
 
-📊 Accuracy: {accuracy:.3f}
-🎯 Precision: {precision:.3f}
-📈 Recall: {recall:.3f}
+Accuracy: {accuracy:.3f}
+Precision: {precision:.3f}
+Recall: {recall:.3f}
 
 Educational Insights:
-• Linear Separability: {'✅ Achieved' if accuracy > 0.95 else '❌ Not achieved'}
-• Convergence: {'✅ Converged' if accuracy > 0.95 else '❌ May not converge'}
+• Linear Separability: {'Achieved' if accuracy > 0.95 else 'Not achieved'}
+• Convergence: {'Converged' if accuracy > 0.95 else 'May not converge'}
 • Model Complexity: Simple linear classifier
 • Learning Capability: Binary classification only
 

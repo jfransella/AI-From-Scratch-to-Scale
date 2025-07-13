@@ -184,10 +184,19 @@ class PerceptronWandbVisualizer(BaseWandbVisualizer):
             # Log classification metrics
             self._log_classification_metrics(y, predictions)
             
+            # Get run name for unique subfolder
+            run_name = None
+            if hasattr(self, 'wandb_run') and self.wandb_run:
+                run_name = getattr(self.wandb_run, 'name', None)
+            run_subdir = f"outputs/plots/{run_name}" if run_name else "outputs/plots/unknown_run"
+            import os
+            os.makedirs(run_subdir, exist_ok=True)
+
             # Generate comprehensive visualizations using updated framework
-            errors_per_epoch = getattr(model, 'losses_', [])
-            visualizations = self.visualizer.generate_all_visualizations(
-                model, X, y, predictions, errors_per_epoch, class_names, experiment_name=experiment_name
+            errors_per_epoch = getattr(model, 'errors_per_epoch', [])
+            run_visualizer = self.visualizer.__class__(save_dir=run_subdir, enabled=self.enabled)
+            visualizations = run_visualizer.generate_all_visualizations(
+                model, X, y, predictions, errors_per_epoch, class_names, experiment_name=experiment_name, run_subdir=run_subdir
             )
             
             # Log all generated visualizations to W&B
@@ -203,9 +212,9 @@ class PerceptronWandbVisualizer(BaseWandbVisualizer):
             if weights_history is not None:
                 weights_history = np.array(weights_history)
                 if weights_history.ndim == 2 and weights_history.shape[1] == 784:
-                    gif_path = self.visualizer.create_weights_animation_gif(
+                    gif_path = run_visualizer.create_weights_animation_gif(
                         weights_history,
-                        save_path="outputs/plots/perceptron_weights_evolution.gif",
+                        save_path=os.path.join(run_subdir, "perceptron_weights_evolution.gif"),
                         experiment_name=experiment_name or "mnist"
                     )
                     if hasattr(self, 'wandb_run') and self.wandb_run:
@@ -213,33 +222,33 @@ class PerceptronWandbVisualizer(BaseWandbVisualizer):
                         self.wandb_run.log({"Weights_Evolution_GIF": wandb.Video(gif_path, format="gif")})
             # Log weights distribution plot
             if weights_history is not None:
-                fig = self.visualizer.plot_weights_distribution(weights_history, save_name="weights_dist", experiment_name=experiment_name or "mnist")
+                fig = run_visualizer.plot_weights_distribution(weights_history, save_name="weights_dist.png", experiment_name=experiment_name or "mnist")
                 if hasattr(self, 'wandb_run') and self.wandb_run:
                     self.log_figure(fig, "Weights_Dist")
                 plt.close(fig)
             # Log bias evolution plot
             if bias_history is not None:
-                fig = self.visualizer.plot_bias_evolution(np.array(bias_history), save_name="bias_dist", experiment_name=experiment_name or "mnist")
+                fig = run_visualizer.plot_bias_evolution(np.array(bias_history), save_name="bias_dist.png", experiment_name=experiment_name or "mnist")
                 if hasattr(self, 'wandb_run') and self.wandb_run:
                     self.log_figure(fig, "Bias_Dist")
                 plt.close(fig)
             # Log accuracy evolution plot
             if accuracy_history is not None:
-                fig = self.visualizer.plot_accuracy_evolution(np.array(accuracy_history), save_name="accuracy_evolution", experiment_name=experiment_name or "mnist")
+                fig = run_visualizer.plot_accuracy_evolution(np.array(accuracy_history), save_name="accuracy_evolution.png", experiment_name=experiment_name or "mnist")
                 if hasattr(self, 'wandb_run') and self.wandb_run:
                     self.log_figure(fig, "Accuracy_Evolution")
                 plt.close(fig)
             
             # Log minimal 28x28 weights evolution GIF
             if weights_history is not None:
-                minimal_gif_path = self.visualizer.create_minimal_weights_gif(weights_history, save_path="outputs/plots/perceptron_weights_minimal.gif")
+                minimal_gif_path = run_visualizer.create_minimal_weights_gif(weights_history, save_path=os.path.join(run_subdir, "perceptron_weights_minimal.gif"))
                 if hasattr(self, 'wandb_run') and self.wandb_run:
                     import wandb
                     self.wandb_run.log({"Weights_Evolution_Minimal_GIF": wandb.Video(minimal_gif_path, format="gif")})
             # Log final weights heatmap
             if weights_history is not None:
                 final_weights = weights_history[-1]
-                final_weights_path = self.visualizer.plot_final_weights_distribution(final_weights, save_path="outputs/plots/perceptron_final_weights.png", experiment_name=experiment_name or "mnist")
+                final_weights_path = run_visualizer.plot_final_weights_distribution(final_weights, save_path=os.path.join(run_subdir, "perceptron_final_weights.png"), experiment_name=experiment_name or "mnist")
                 if hasattr(self, 'wandb_run') and self.wandb_run:
                     self.wandb_run.log({"Final_Weights_Heatmap": wandb.Image(final_weights_path)})
             
