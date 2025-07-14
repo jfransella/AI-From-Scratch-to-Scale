@@ -239,7 +239,7 @@ class PerceptronVisualizer(BaseVisualizer):
             add_mathematical_context(
                 ax,
                 "Decision Boundary",
-                "w₁x₁ + w₂x₂ + b = 0",
+                "w1*x1 + w2*x2 + b = 0",
                 "Linear separation of classes"
             )
             
@@ -272,7 +272,7 @@ class PerceptronVisualizer(BaseVisualizer):
         if not self.enabled:
             return None
             
-        logger.info("🎮 Generating interactive visualization...")
+        logger.info("Generating interactive visualization...")
         
         # Use Phase 2 interactive features
         fig, ax = self.interactive_viz.create_interactive_decision_boundary(

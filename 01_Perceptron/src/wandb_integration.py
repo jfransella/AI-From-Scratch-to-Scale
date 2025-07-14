@@ -210,16 +210,21 @@ class PerceptronWandbVisualizer(BaseWandbVisualizer):
             bias_history = getattr(model, 'bias_history', None)
             accuracy_history = getattr(model, 'accuracy_history', None)
             if weights_history is not None:
-                weights_history = np.array(weights_history)
-                if weights_history.ndim == 2 and weights_history.shape[1] == 784:
-                    gif_path = run_visualizer.create_weights_animation_gif(
-                        weights_history,
-                        save_path=os.path.join(run_subdir, "perceptron_weights_evolution.gif"),
-                        experiment_name=experiment_name or "mnist"
-                    )
-                    if hasattr(self, 'wandb_run') and self.wandb_run:
-                        import wandb
-                        self.wandb_run.log({"Weights_Evolution_GIF": wandb.Video(gif_path, format="gif")})
+                try:
+                    weights_history = np.array(weights_history)
+                    if weights_history.ndim == 2 and weights_history.shape[1] == 784:
+                        gif_path = run_visualizer.create_weights_animation_gif(
+                            weights_history,
+                            save_path=os.path.join(run_subdir, "perceptron_weights_evolution.gif"),
+                            experiment_name=experiment_name or "mnist"
+                        )
+                        if hasattr(self, 'wandb_run') and self.wandb_run:
+                            import wandb
+                            self.wandb_run.log({"Weights_Evolution_GIF": wandb.Video(gif_path, format="gif")})
+                    else:
+                        logger.debug(f"Weights history shape {weights_history.shape} not suitable for GIF animation (requires shape (epochs, 784))")
+                except Exception as e:
+                    logger.warning(f"Could not create weights animation GIF: {e}")
             # Log weights distribution plot
             if weights_history is not None:
                 fig = run_visualizer.plot_weights_distribution(weights_history, save_name="weights_dist.png", experiment_name=experiment_name or "mnist")
@@ -241,16 +246,30 @@ class PerceptronWandbVisualizer(BaseWandbVisualizer):
             
             # Log minimal 28x28 weights evolution GIF
             if weights_history is not None:
-                minimal_gif_path = run_visualizer.create_minimal_weights_gif(weights_history, save_path=os.path.join(run_subdir, "perceptron_weights_minimal.gif"))
-                if hasattr(self, 'wandb_run') and self.wandb_run:
-                    import wandb
-                    self.wandb_run.log({"Weights_Evolution_Minimal_GIF": wandb.Video(minimal_gif_path, format="gif")})
+                try:
+                    weights_history = np.array(weights_history)
+                    if weights_history.ndim == 2 and weights_history.shape[1] == 784:
+                        minimal_gif_path = run_visualizer.create_minimal_weights_gif(weights_history, save_path=os.path.join(run_subdir, "perceptron_weights_minimal.gif"))
+                        if hasattr(self, 'wandb_run') and self.wandb_run:
+                            import wandb
+                            self.wandb_run.log({"Weights_Evolution_Minimal_GIF": wandb.Video(minimal_gif_path, format="gif")})
+                    else:
+                        logger.debug(f"Weights history shape {weights_history.shape} not suitable for minimal GIF (requires shape (epochs, 784))")
+                except Exception as e:
+                    logger.warning(f"Could not create minimal weights GIF: {e}")
             # Log final weights heatmap
             if weights_history is not None:
-                final_weights = weights_history[-1]
-                final_weights_path = run_visualizer.plot_final_weights_distribution(final_weights, save_path=os.path.join(run_subdir, "perceptron_final_weights.png"), experiment_name=experiment_name or "mnist")
-                if hasattr(self, 'wandb_run') and self.wandb_run:
-                    self.wandb_run.log({"Final_Weights_Heatmap": wandb.Image(final_weights_path)})
+                try:
+                    weights_history = np.array(weights_history)
+                    if weights_history.shape[1] == 784:
+                        final_weights = weights_history[-1]
+                        final_weights_path = run_visualizer.plot_final_weights_distribution(final_weights, save_path=os.path.join(run_subdir, "perceptron_final_weights.png"), experiment_name=experiment_name or "mnist")
+                        if hasattr(self, 'wandb_run') and self.wandb_run:
+                            self.wandb_run.log({"Final_Weights_Heatmap": wandb.Image(final_weights_path)})
+                    else:
+                        logger.debug(f"Weights history shape {weights_history.shape} not suitable for final weights heatmap (requires shape (epochs, 784))")
+                except Exception as e:
+                    logger.warning(f"Could not create final weights heatmap: {e}")
             
             # Log confusion matrix as W&B Table and image
             if hasattr(self, 'wandb_run') and self.wandb_run:

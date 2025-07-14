@@ -56,7 +56,7 @@ EXPERIMENTS: Dict[str, Dict[str, Any]] = {
         # The Perceptron should converge easily.
         "data_loader": lambda: load_iris_data(class_indices=[0, 1]),
         "learning_rate": 0.01,
-        "epochs": 100,
+        "epochs": 150,
         "class_names": ['Setosa', 'Versicolour'],
     },
     "iris-hard": {

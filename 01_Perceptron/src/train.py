@@ -64,7 +64,7 @@ _verify_virtual_environment()
 # Add src directory to Python path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 # --- Logging Setup ---
-def train(experiment: str, no_wandb: bool = False) -> None:
+def train(experiment: str, no_wandb: bool = False, epochs_override: int | None = None) -> None:
     """Orchestrates a single training and evaluation run for a given experiment.
 
     This function performs the following steps:
@@ -102,12 +102,15 @@ def train(experiment: str, no_wandb: bool = False) -> None:
     # --- Setup W&B ---
     wandb_mode = "disabled" if no_wandb else "online"
 
+    # Use epochs override if provided, otherwise use config default
+    epochs = epochs_override if epochs_override is not None else exp_config["epochs"]
+    
     wandb.init(
         mode=wandb_mode,
         project=WANDB_PROJECT_NAME,
         config={
             "learning_rate": exp_config["learning_rate"],
-            "epochs": exp_config["epochs"],
+            "epochs": epochs,
             "experiment_type": experiment,
         }
     )
@@ -195,10 +198,15 @@ def main():
         action='store_true',
         help="Disable Weights & Biases logging for this run."
     )
+    parser.add_argument(
+        '--epochs',
+        type=int,
+        help="Override the default number of epochs from config."
+    )
     args, unknown = parser.parse_known_args()
     if unknown:
         logging.warning("Unrecognized arguments will be ignored: %s", unknown)
-    train(args.experiment, no_wandb=args.no_wandb)
+    train(args.experiment, no_wandb=args.no_wandb, epochs_override=args.epochs)
 
 if __name__ == "__main__":
     main()
